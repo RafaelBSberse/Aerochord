@@ -1,122 +1,122 @@
 # Aerochord
 
-Hiperinstrumento digital que transforma gestos de mão (capturados por webcam RGB) em eventos musicais MIDI 2.0 em tempo real.
+A digital hyperinstrument that turns hand gestures (captured by an RGB webcam) into real-time MIDI 2.0 musical events.
 
-**TCC de Engenharia de Software** — implementação do TCC 2.
+**Undergraduate thesis (TCC) — Computer Science, Universidade de Caxias do Sul (UCS).** Currently in the TCC 2 (implementation) phase.
 
 ---
 
-## Arquitetura
+## Architecture
 
-Pipeline multithreaded com 5 módulos principais e um módulo de visualização opcional, comunicados por filas lock-free SPSC:
+Multithreaded pipeline with 5 core modules and an optional visualization module, communicating through lock-free SPSC queues:
 
 ```
 Webcam
   │
   ▼
-[Captura]            src/capture/             ← V4L2 / DirectShow / AVFoundation
+[Capture]            src/capture/             ← V4L2 / DirectShow / AVFoundation
   │  VideoFrame
   ▼
-[Detecção de Pose]   src/pose_detection/      ← MediaPipe Hand Landmarker
+[Pose Detection]     src/pose_detection/      ← MediaPipe Hand Landmarker
   │  HandLandmarks
   ▼
-[Análise de Gestos]  src/gesture_analysis/    ← FSM + EMA
+[Gesture Analysis]   src/gesture_analysis/    ← FSM + EMA filter
   │  GestureEvent
   ▼
-[Mapeamento]         src/mapping/             ← perfis configuráveis, legato, programa GM
+[Mapping]            src/mapping/             ← configurable profiles, legato, GM program
   │  MidiCommand
   ▼
-[Geração MIDI]       src/midi_generation/     ← JUCE + ALSA UMP (MIDI 2.0)
+[MIDI Generation]    src/midi_generation/     ← JUCE + ALSA UMP (MIDI 2.0)
   │
   ▼
-Sintetizador (FluidSynth, DAW, hardware)
+Synthesizer (FluidSynth, DAW, hardware)
 
-(paralelo) [Visualização]  src/visualization/   ← OpenCV: preview, HUD e controles
+(parallel) [Visualization]  src/visualization/   ← OpenCV: preview, HUD and controls
 ```
 
-Meta de latência end-to-end: **< 30 ms**.
+End-to-end latency target: **< 30 ms**.
 
 ---
 
-## Pré-requisitos
+## Prerequisites
 
-| Dependência | Versão mínima | Obtida por |
-|-------------|---------------|------------|
-| CMake       | 3.22          | Sistema    |
-| Compilador C++17 | GCC 11 / Clang 13 / MSVC 2019 | Sistema |
-| JUCE        | 8.x           | FetchContent automático |
-| MediaPipe C++ Tasks | qualquer | Manual — ver abaixo |
-| OpenCV (core, highgui, imgproc) | 4.x | Sistema (`libopencv-dev`) — opcional |
-| ALSA (Linux) | 1.2.10+      | `libasound2-dev` — opcional, para UMP nativo |
-| FluidSynth + SoundFont | qualquer | `fluidsynth fluid-soundfont-gm` — para o `run.sh` |
+| Dependency | Minimum version | Provided by |
+|------------|-----------------|-------------|
+| CMake      | 3.22            | System      |
+| C++17 compiler | GCC 11 / Clang 13 / MSVC 2019 | System |
+| JUCE       | 8.x             | Automatic via FetchContent |
+| MediaPipe C++ Tasks | any   | Manual — see below |
+| OpenCV (core, highgui, imgproc) | 4.x | System (`libopencv-dev`) — optional |
+| ALSA (Linux) | 1.2.10+       | `libasound2-dev` — optional, for native UMP |
+| FluidSynth + SoundFont | any | `fluidsynth fluid-soundfont-gm` — used by `run.sh` |
 
 ### MediaPipe
 
-MediaPipe não tem integração CMake oficial. Duas opções:
+MediaPipe has no official CMake integration. Two options:
 
-**Opção A — binários pré-compilados (recomendada):**
-1. Baixar os artefatos do [MediaPipe Hand Landmarker](https://developers.google.com/mediapipe/solutions/vision/hand_landmarker) para C++.
-2. Descompactar em `<algum-caminho>/mediapipe-sdk/`.
-3. Passar `-DMEDIAPIPE_ROOT=<algum-caminho>/mediapipe-sdk` ao CMake.
+**Option A — pre-built binaries (recommended):**
+1. Download the [MediaPipe Hand Landmarker](https://developers.google.com/mediapipe/solutions/vision/hand_landmarker) artifacts for C++.
+2. Extract them into `<some-path>/mediapipe-sdk/`.
+3. Pass `-DMEDIAPIPE_ROOT=<some-path>/mediapipe-sdk` to CMake.
 
-**Opção B — build a partir do código-fonte:**
-Seguir o [guia oficial do MediaPipe](https://google.github.io/mediapipe/getting_started/install.html) (requer Bazel).
+**Option B — build from source:**
+Follow the [official MediaPipe guide](https://google.github.io/mediapipe/getting_started/install.html) (requires Bazel).
 
-> O modelo `assets/hand_landmarker.task` já vem versionado no repositório.
+> The `assets/hand_landmarker.task` model is committed to the repository.
 
-Sem `-DMEDIAPIPE_ROOT`, o projeto compila com um **stub** que mantém o pipeline ativo com landmarks zerados — útil para desenvolver e testar os módulos downstream.
+Without `-DMEDIAPIPE_ROOT`, the project compiles with a **stub** that keeps the pipeline running with zeroed landmarks — useful for developing and testing the downstream modules.
 
 ---
 
 ## Build
 
 ```bash
-# Stub MediaPipe (desenvolvimento)
+# MediaPipe stub (development)
 cmake -B build -DCMAKE_BUILD_TYPE=Debug
 
-# Com MediaPipe real
-cmake -B build -DCMAKE_BUILD_TYPE=Release -DMEDIAPIPE_ROOT=/caminho/para/mediapipe-sdk
+# With real MediaPipe
+cmake -B build -DCMAKE_BUILD_TYPE=Release -DMEDIAPIPE_ROOT=/path/to/mediapipe-sdk
 
-# Com testes
+# With tests
 cmake -B build -DAEROCHORD_BUILD_TESTS=ON
 
-# Compilar
+# Compile
 cmake --build build -j$(nproc)
 ```
 
 ---
 
-## Execução
+## Running
 
-### Recomendada — `run.sh` (Linux com FluidSynth)
+### Recommended — `run.sh` (Linux with FluidSynth)
 
 ```bash
 sudo apt install fluidsynth fluid-soundfont-gm
 ./run.sh
 ```
 
-O script sobe o FluidSynth, descobre a porta ALSA dele e inicia o Aerochord conectando a saída MIDI direto no sintetizador. Aceita os mesmos argumentos do binário (passados após o `./run.sh`).
+The script starts FluidSynth, discovers its ALSA port, and launches Aerochord wired straight into the synthesizer's MIDI input. It forwards any extra arguments to the binary (`./run.sh --device 1`, `./run.sh --eval`, etc.).
 
-### Direta
+### Direct
 
 ```bash
-./build/aerochord_artefacts/Debug/aerochord [opções]
+./build/aerochord_artefacts/Debug/aerochord [options]
 ```
 
-### Opções de linha de comando
+### Command-line options
 
-| Flag             | Descrição                                                                 |
-|------------------|---------------------------------------------------------------------------|
-| `--device N`     | Índice da webcam (default: 0)                                             |
-| `--midi-out NOME`| Nome (parcial) da porta MIDI de saída                                     |
-| `--res WxH`      | Resolução desejada (ex: `1280x720`); default: máxima detectada            |
-| `--width N`      | Largura individual (combina com `--height`)                               |
-| `--height N`     | Altura individual                                                         |
-| `--fps N`        | FPS desejado; default: maior FPS suportado pela câmera                    |
-| `--no-viz`       | Desabilita janela OpenCV de visualização                                  |
-| `--eval`         | Grava CSV de latência (`aerochord_eval_<timestamp>.csv`)                  |
+| Flag              | Description                                                              |
+|-------------------|--------------------------------------------------------------------------|
+| `--device N`      | Webcam index (default: 0)                                                |
+| `--midi-out NAME` | Substring of the target MIDI output port                                 |
+| `--res WxH`       | Target resolution (e.g. `1280x720`); default: maximum the camera reports |
+| `--width N`       | Width only (combine with `--height`)                                     |
+| `--height N`      | Height only                                                              |
+| `--fps N`         | Target FPS; default: highest the camera supports                         |
+| `--no-viz`        | Disable the OpenCV visualization window                                  |
+| `--eval`          | Record a latency CSV (`aerochord_eval_<timestamp>.csv`)                  |
 
-### Testes
+### Tests
 
 ```bash
 ctest --test-dir build --output-on-failure
@@ -124,70 +124,70 @@ ctest --test-dir build --output-on-failure
 
 ---
 
-## Janela de visualização e controles em runtime
+## Visualization window and runtime controls
 
-Quando OpenCV está disponível, o Aerochord abre uma janela com:
+When OpenCV is available, Aerochord opens a window with:
 
-- **Preview da webcam** com landmarks sobrepostos
-- **Guia de notas** mostrando as 12 zonas verticais da escala cromática (com gap de tolerância no topo e base — a mão pode sair um pouco do quadro sem perder a nota mais grave/aguda)
-- **HUD** com FPS, modo MIDI (1.0 / 2.0), nota ativa, frames descartados
-- **Painel inferior** com:
-  - Toggle de **legato** (ligar/desligar a sobreposição entre notas durante uma transição com pinça mantida)
-  - Seletor de **instrumento** (20 vozes General MIDI: piano, e.piano, marimba, organ, etc.)
+- **Webcam preview** with the detected landmarks overlaid
+- **Note guide** showing the 12 vertical zones of the chromatic scale (with a tolerance gap at the top and bottom — the hand can drift slightly out of frame without losing the lowest/highest note)
+- **HUD** with FPS, MIDI mode (1.0 / 2.0), active note, and dropped frames
+- **Bottom panel** with:
+  - **Legato** toggle (enables note overlap during a zone transition while the pinch is held)
+  - **Instrument** selector (20 General MIDI voices: piano, e.piano, marimba, organ, etc.)
 
-`Ctrl+C` no terminal encerra o pipeline limpo.
-
----
-
-## Mapeamento gesto–som
-
-| Função              | Mão       | Gesto                                              |
-|---------------------|-----------|----------------------------------------------------|
-| Seleção de oitava   | Esquerda  | Pinça + movimento vertical                         |
-| Volume global       | Esquerda  | Mão aberta + movimento vertical                    |
-| Disparo de nota     | Direita   | Pinça (polegar + indicador) em zona vertical       |
-| Parada de nota      | Direita   | Soltar a pinça                                     |
-| Legato              | Direita   | Mover entre zonas mantendo a pinça (toggle na UI)  |
-| Timbre / Filtro     | Direita   | Distância dedo médio–palma (com pinça ativa)       |
-| Pitch Bend          | Direita   | Inclinação frente/trás (com pinça ativa)           |
-| Vibrato             | Direita   | Oscilação lateral leve (com pinça ativa)           |
-| Velocity            | Direita   | Velocidade de fechamento da pinça                  |
-
-Quando a mão sai do quadro durante um pinch hold, o Aerochord emite `NOTE_OFF` automaticamente após 200 ms — evita notas presas.
+Press `Ctrl+C` in the terminal to shut the pipeline down cleanly.
 
 ---
 
-## Estrutura de diretórios
+## Gesture-to-sound mapping
+
+| Function          | Hand   | Gesture                                                |
+|-------------------|--------|--------------------------------------------------------|
+| Octave selection  | Left   | Pinch + vertical movement                              |
+| Global volume     | Left   | Open hand + vertical movement                          |
+| Note on           | Right  | Pinch (thumb + index) inside a vertical zone           |
+| Note off          | Right  | Release the pinch                                      |
+| Legato            | Right  | Move between zones while holding the pinch (UI toggle) |
+| Timbre / Filter   | Right  | Middle-finger to palm distance (during an active pinch)|
+| Pitch bend        | Right  | Hand tilt forward/back (during an active pinch)        |
+| Vibrato           | Right  | Slight lateral oscillation (during an active pinch)    |
+| Velocity          | Right  | Speed of the pinch closing                             |
+
+If the hand leaves the frame during a pinch hold, Aerochord emits `NOTE_OFF` automatically after 200 ms — preventing stuck notes.
+
+---
+
+## Directory layout
 
 ```
 Aerochord/
 ├── CMakeLists.txt
 ├── cmake/
 │   └── FetchDependencies.cmake     # JUCE, MediaPipe, ALSA, OpenCV
-├── run.sh                          # Launcher Linux com FluidSynth
+├── run.sh                          # Linux launcher with FluidSynth
 ├── assets/
-│   └── hand_landmarker.task        # Modelo MediaPipe (versionado)
+│   └── hand_landmarker.task        # MediaPipe model (versioned)
 ├── src/
-│   ├── main.cpp                    # Entry point — CLI e montagem do pipeline
-│   ├── common/                     # Tipos, fila lock-free, logger, thread utils
+│   ├── main.cpp                    # Entry point — CLI and pipeline assembly
+│   ├── common/                     # Shared types, lock-free queue, logger, thread utils
 │   ├── capture/                    # CaptureModule (V4L2 / DirectShow / AVFoundation)
 │   ├── pose_detection/             # PoseDetectionModule (MediaPipe Tasks)
 │   ├── gesture_analysis/           # GestureAnalysisModule (FSM + EMA)
-│   ├── mapping/                    # MappingModule (perfis, legato, GM program)
+│   ├── mapping/                    # MappingModule (profiles, legato, GM program)
 │   ├── midi_generation/            # MidiGenerationModule (JUCE + ALSA UMP)
 │   └── visualization/              # VisualizationModule (OpenCV + UI)
 ├── tests/                          # GoogleTest: queue, gesture, mapping, latency
 └── tools/
-    └── analyze_eval.py             # Análise dos CSVs gerados com --eval
+    └── analyze_eval.py             # Analysis of the CSVs produced by --eval
 ```
 
 ---
 
-## Convenções de código
+## Code conventions
 
-- Filas lock-free (SPSC) para **toda** comunicação entre módulos
-- Threads de visão e MIDI nunca bloqueadas (sem mutex no caminho crítico)
-- Timestamps inseridos nos pacotes UMP **imediatamente** após detecção do gesto
-- Logging estruturado em todos os módulos (`AEROCHORD_LOG_*`)
-- Filtro EMA aplicado nos landmarks **antes** de enviar à análise de gestos
-- Controles em runtime (UI → MappingModule) trocam estado via `std::atomic` — nunca mutex no hot path
+- Lock-free (SPSC) queues for **all** inter-module communication
+- Vision and MIDI threads are never blocked — no mutexes on the hot path
+- Timestamps are stamped onto UMP packets **immediately** after gesture detection
+- Structured logging in every module (`AEROCHORD_LOG_*`)
+- EMA smoothing applied to landmarks **before** they reach the gesture analysis stage
+- Runtime controls (UI → MappingModule) exchange state through `std::atomic` — never with mutexes on the audio path
