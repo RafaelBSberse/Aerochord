@@ -1,0 +1,46 @@
+# --- Build artifacts ---
+build/
+build-*/
+out/
+cmake-build-*/
+
+# --- CMake ---
+CMakeCache.txt
+CMakeFiles/
+CMakeScripts/
+cmake_install.cmake
+CTestTestfile.cmake
+Testing/
+Makefile
+*.cbp
+compile_commands.json
+
+# --- Saídas geradas em runtime ---
+aerochord_eval_*.csv
+*.log
+
+# --- Compilados / objetos ---
+*.o
+*.obj
+*.a
+*.so
+*.so.*
+*.dylib
+*.dll
+*.exe
+*.out
+
+# --- Editores / IDEs ---
+.vscode/
+.idea/
+.cache/
+*.swp
+*.swo
+*~
+
+# --- Sistema ---
+.DS_Store
+Thumbs.db
+
+# --- Claude (configurações locais) ---
+.claude/
