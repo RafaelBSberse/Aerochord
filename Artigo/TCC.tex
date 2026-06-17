@@ -1,0 +1,331 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Modelo LaTeX de monografia UCS                    %%
+%% Data de Modificação: 10 de agosto de 2021         %%
+%%                                                   %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% ---
+\documentclass[
+	12pt,				% tamanho da fonte
+	openright,			% capítulos começam em pág ímpar (insere página vazia caso preciso)
+	oneside,			% para impressão em uma folha. Oposto a twoside
+	a4paper,			% tamanho do papel. 
+	% -- opções do pacote babel --
+	english,			% idioma adicional para hifenização
+	french,				% idioma adicional para hifenização
+	spanish,			% idioma adicional para hifenização
+	brazil				% o último idioma é o principal do documento
+	]{abntex2}
+
+% ---
+% Pacotes básicos 
+% ---
+\usepackage[table]{xcolor}
+\usepackage{adjustbox}
+\usepackage{amsmath}
+\usepackage{chemformula} 
+\usepackage{chemfig} 
+\usepackage{mathtools}
+\usepackage[printonlyused]{acronym}
+
+\usepackage{setspace}
+
+\usepackage{times}
+\usepackage[T1]{fontenc}		% Seleção de codigos de fonte.
+\usepackage[utf8]{inputenc}		% Codificação do documento (conversão automática dos acentos)
+\usepackage{lastpage}			% Usado pela Ficha catalográfica
+\usepackage{indentfirst}		% Indenta o primeiro parágrafo de cada seção.
+\usepackage{color}				% Controle das cores
+\usepackage{graphicx}			% Inclusão de gráficos
+\usepackage{subcaption}
+\usepackage{ragged2e}
+%\usepackage{microtype} 			% para melhorias de justificação
+
+\usepackage[alf,
+            versalete,
+            abnt-emphasize = bf,                % destaca o titulo em negrito;
+            abnt-etal-list = 3,                 % trabalhos com mais de 3 autores recebem et al.,;
+            abnt-etal-text = it,                % escreve o et al., em itálico;
+            abnt-and-type = e,                 % usa o caractere 'e' para mais de um autor;
+            abnt-last-names = abnt,             % trata sobrenomes 'estritamente' conforme a ABNT; e
+            abnt-repeated-author-omit = yes     % autores com + de uma entrada recebem '____.'
+]{abntex2cite}
+
+% pacotes de tabelas
+\usepackage{multicol}	% Suporte a mesclagens em colunas
+\usepackage{multirow}	% Suporte a mesclagens em linhas
+\usepackage{longtable}	% Tabelas com várias páginas
+\usepackage{fr-longtable, ltcaption}% permitir adicionar conclusão na última página de longtable
+\usepackage{threeparttablex}    % notas no longtable
+\renewcommand\tabularxcolumn[1]{m{#1}} % for vertical centering text in X column
+\usepackage{array}
+
+\usepackage{listings}
+\usepackage{hyperref}
+
+\AtBeginDocument{% the counter is defined later
+  \counterwithout{lstlisting}{chapter}%
+}
+\makeatletter
+\renewcommand{\l@lstlisting}[2]{%
+  \@dottedtocline{1}{0em}{1.5em}{\lstlistingname\ #1}{#2}%
+}
+
+\renewcommand{\lstlistingname}{Algoritmo}% Listing -> Algorithm
+\renewcommand{\lstlistlistingname}{LISTA DE ALGORITMOS}% List of Listings -> List of Algorithms
+
+\usepackage{pgfplots} %graficos
+\usepackage{booktabs,makecell}
+\usepackage{siunitx}
+
+\usepackage{array}
+
+\usepackage{todonotes}
+
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{tabularx}
+
+\setlength{\marginparwidth}{2cm}
+
+\newcolumntype{L}[1]{>{\raggedright\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
+\newcolumntype{C}[1]{>{\centering\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
+\newcolumntype{R}[1]{>{\raggedleft\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
+
+%=======================================================================
+% CONFIGURAÇÕES DE PACOTES
+%=======================================================================
+\DeclareMathOperator*{\maxi}{Maximizar}
+\DeclareMathOperator*{\mini}{Minimizar }
+
+\newcommand{\icol}[1]{% inline column vector
+  \left(\begin{smallmatrix}#1\end{smallmatrix}\right)%
+}
+
+%------
+% Configurações dos Algoritmos/Código
+%------
+\lstset{language=C,                 % linguagem padrão (pode ser modificada em cada algoritmo/código)   
+        basicstyle=\footnotesize,   % tamanho da fonte utilizado para o código
+        numbers=left,               % onde colocar os números da linha
+        numberstyle=\footnotesize,  %estilo a ser utilizado pelos números
+        frame=single                % adiciona um quadro ao redor do código
+} 
+
+%=======================================================================
+% Informações de dados para CAPA, FOLHA DE ROSTO e FOLHA DE APROVAÇÃO
+%=======================================================================
+\titulo{Aerochord: Um Hiperinstrumento Musical Controlado por Gestos}
+\autor{Rafael Basso Sberse}
+\local{Caxias do Sul}
+\data{2025}
+\orientador{Prof. Dra. Elisa Boff}
+% \coorientador{Prof. Dr. Nome do Co-orientador}
+\universidade{UNIVERSIDADE DE CAXIAS DO SUL}
+\area{ÁREA DO CONHECIMENTO DE CIÊNCIAS EXATAS E ENGENHARIAS}
+\preambulo{Trabalho de Conclusão de Curso apresentado como requisito parcial à obtenção do título de Bacharel em Ciência da Computação na Área do Conhecimento de Ciências Exatas e Engenharias da Universidade de Caxias do Sul.}
+\tipotrabalho{Projeto de Diplomação}
+% ---
+
+% alterando o aspecto da cor azul
+\definecolor{blue}{RGB}{41,5,195}
+
+% informações do PDF
+\makeatletter
+\hypersetup{
+     	%pagebackref=true,
+		pdftitle={\@title}, 
+		pdfauthor={\@author},
+    	pdfsubject={\imprimirpreambulo},
+	    pdfcreator={LaTeX with abnTeX2},
+		pdfkeywords={abnt}{latex}{abntex}{abntex2}{trabalho acadêmico}, 
+		colorlinks=true,       		% false: boxed links; true: colored links
+    	linkcolor=black,          	% color of internal links
+    	citecolor=black,        	% color of links to bibliography
+    	filecolor=magenta,      	% color of file links
+		urlcolor=black,
+		bookmarksdepth=4
+}
+\makeatother
+% --- 
+
+% ---
+% Posiciona figuras e tabelas no topo da página quando adicionadas sozinhas
+% em um página em branco. Ver https://github.com/abntex/abntex2/issues/170
+\makeatletter
+\setlength{\@fptop}{5pt} % Set distance from top of page to first float
+\makeatother
+% ---
+
+% ---% Possibilita criação de Quadros e Lista de quadros.
+% Ver https://github.com/abntex/abntex2/issues/176
+%
+\newcommand{\quadroname}{Quadro}
+\newcommand{\listofquadrosname}{Lista de quadros}
+
+\newfloat[chapter]{quadro}{loq}{\quadroname}
+\newlistof{listofquadros}{loq}{\listofquadrosname}
+\newlistentry{quadro}{loq}{0}
+
+% configurações para atender às regras da ABNT
+\setfloatadjustment{quadro}{\centering}
+\counterwithout{quadro}{chapter}
+\renewcommand{\cftquadroname}{\quadroname\space} 
+\renewcommand*{\cftquadroaftersnum}{\hfill--\hfill}
+
+\setfloatlocations{quadro}{hbtp} % Ver https://github.com/abntex/abntex2/issues/176
+% --- 
+% Espaçamentos entre linhas e parágrafos 
+% --- 
+
+% O tamanho do parágrafo é dado por:
+\setlength{\parindent}{1.3cm}
+
+% Controle do espaçamento entre um parágrafo e outro:
+\setlength{\parskip}{0.2cm}  % tente também \onelineskip
+
+% ---
+% compila o índice
+% ---
+\makeindex
+% ---
+
+% ----
+% Início do documento
+% ----
+\pgfplotsset{compat=1.15}
+\begin{document}
+
+% Seleciona o idioma do documento (conforme pacotes do babel)
+\selectlanguage{brazil}
+
+% Retira espaço extra obsoleto entre as frases.
+\frenchspacing 
+
+%=======================================================================
+% ELEMENTOS PRÉ-TEXTUAIS
+%=======================================================================
+
+% ----------------------------------------------------------------------
+% Capa
+% ----------------------------------------------------------------------
+\imprimircapa
+
+% ----------------------------------------------------------------------
+% Folha de rosto
+% ----------------------------------------------------------------------
+\imprimirfolhaderosto
+
+% ----------------------------------------------------------------------
+% Folha de aprovação
+% ----------------------------------------------------------------------
+\newpage
+\include{1-pre-textuais/aprovacao}
+
+% ----------------------------------------------------------------------
+% Dedicatória (opcional).
+% ----------------------------------------------------------------------
+%\imprimirdedicatoria{1-pre-textuais/dedicatoria}
+
+% ----------------------------------------------------------------------
+% Agradecimentos (opcional).
+% ----------------------------------------------------------------------
+% \imprimiragradecimentos{1-pre-textuais/agradecimentos}
+
+% ----------------------------------------------------------------------
+% Epígrafe (opcional).
+% ----------------------------------------------------------------------
+% \include{1-pre-textuais/epigrafe}
+
+% ----------------------------------------------------------------------
+% Resumo  
+% ----------------------------------------------------------------------
+\include{1-pre-textuais/resumo}
+
+% ----------------------------------------------------------------------
+% Abstract 
+% ----------------------------------------------------------------------
+\include{1-pre-textuais/abstract}
+
+% ----------------------------------------------------------------------
+% Lista de Figuras (se necessário)
+% ----------------------------------------------------------------------
+% \pdfbookmark[0]{\listfigurename}{lof}
+% \listoffigures*
+% \cleardoublepage
+
+% ----------------------------------------------------------------------
+% Lista de Tabelas (se necessário)
+% ----------------------------------------------------------------------
+% \pdfbookmark[0]{\listtablename}{lot}
+% \listoftables*
+% \cleardoublepage
+
+% ----------------------------------------------------------------------
+% Lista de Quadros (se necessário)
+% ----------------------------------------------------------------------
+% \pdfbookmark[0]{\listofquadrosname}{loq}
+% \listofquadros*
+% \cleardoublepage
+
+% ----------------------------------------------------------------------
+% Lista de Algoritmos (se necessário)
+% ----------------------------------------------------------------------
+% \newlistof{lstlistoflistings}{lol}{\lstlistlistingname}
+% \lstlistoflistings*
+% \cleardoublepage
+
+% ----------------------------------------------------------------------
+% Lista de abreviaturas e siglas (opcional)
+% ----------------------------------------------------------------------
+\include{1-pre-textuais/abreviaturassiglas}
+
+% ----------------------------------------------------------------------
+% Lista de símbolos (opcional)
+% ----------------------------------------------------------------------
+% \include{1-pre-textuais/simbolos}
+
+% ----------------------------------------------------------------------
+% Sumário
+% ----------------------------------------------------------------------
+\pdfbookmark[0]{\contentsname}{toc}
+\tableofcontents*
+\cleardoublepage
+
+%=======================================================================
+% ELEMENTOS TEXTUAIS
+%=======================================================================
+\textual
+
+\include{2-textuais/1-introducao}
+\include{2-textuais/2-Referencial}
+\include{2-textuais/3-Conclusoes}
+\include{2-textuais/2-interacao_gestual_e_hiperinstrumentos}
+\include{2-textuais/3-computacao_musical_e_protocolo_midi.tex}
+\include{2-textuais/4-estado_arte_interfaces_musicais_gestuais}
+\include{2-textuais/5-proposta_de_solucao.tex}
+\include{2-textuais/6-conclusao.tex}
+%\include{2-textuais/nomedoarquivo sem .tex}
+
+%=======================================================================
+% ELEMENTOS PÓS-TEXTUAIS
+%=======================================================================
+\postextual
+
+% ----------------------------------------------------------------------
+% Referências bibliográficas
+% ----------------------------------------------------------------------
+\bibliographystyle{abntex2-alf}
+\bibliography{3-pos-textuais/referencias.bib}
+
+% ----------------------------------------------------------------------
+% Apêndices (se necessário)
+% ----------------------------------------------------------------------
+%\include{3-pos-textuais/apendices}
+
+% ----------------------------------------------------------------------
+% Anexos (se necessário)
+% ----------------------------------------------------------------------
+%\include{3-pos-textuais/anexos}
+
+\end{document}

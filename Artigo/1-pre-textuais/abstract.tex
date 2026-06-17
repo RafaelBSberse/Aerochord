@@ -1,0 +1,13 @@
+% Resumo em Língua Inglesa
+\setlength{\absparsep}{18pt}
+\begin{resumo}[ABSTRACT]
+ \begin{otherlanguage*}{english}
+
+This work proposes the architecture and implementation plan for a gestural musical hyperinstrument named Aerochord, which utilizes computer vision with a standard RGB camera to generate MIDI 2.0 events with extended resolution, aiming to democratize musical expression for users without technical training on instruments and for people with reduced mobility. Initially, a literature review was conducted on human-computer interaction and computer music, followed by a critical analysis of the state of the art in gestural interfaces, which highlighted a gap between accessibility, latency, and professional-level expressivity. Based on this investigation, the functional and non-functional requirements for Aerochord were defined, including real-time video processing, hand landmark detection via computer vision techniques, preliminary gesture-to-sound mappings, and communication via MIDI 2.0 with a contingency plan for legacy mode. A modular architecture in C++ using the JUCE framework is proposed, organized into pipelines designed to minimize jitter, utilizing lock-free queues, handshaking via MIDI Capability Inquiry, and timestamp insertion in Universal MIDI Packets to ensure a coherent sonic response to the performer's gestures. In the next phase, an experimental evaluation is planned, featuring objective measurements of latency and recognition accuracy, alongside subjective methods for usability and cognitive load, incorporating privacy considerations and adaptability to different user profiles and use cases. This conceptual stage establishes a robust foundation for the prototype's implementation, offering technical and methodological guidelines for real-time prototyping and experimental testing. It is expected that Aerochord will contribute to the fields of human-computer interaction and computer music by presenting a model of an accessible, responsive, and expressive hyperinstrument, serving as a basis for future research in adaptive mappings and immersive environments.
+
+
+% Coloque após os ":"  as palavras-chave com a primeira 
+% letra de cada palavra em maiúscula e separadas por ponto.
+\textbf{Keywords}: gesture interfaces, musical computing, MIDI 2.0, musical democratization, computer vision, hyperinstruments, accessibility, low latency.
+ \end{otherlanguage*}
+\end{resumo}

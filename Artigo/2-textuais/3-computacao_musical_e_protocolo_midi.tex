@@ -1,0 +1,110 @@
+\chapter{Computação e Música}
+\label{cap:computacao_musical}
+
+Este capítulo apresenta a base teórica que serviu de apoio para o desenvolvimento da solução computacional do Aerochord. Na Seção~\ref{sec:fundamentos_computacao_musical}, discutem-se os fundamentos da computação musical, incluindo representação digital do som, síntese sonora e processamento de áudio digital. Em seguida, a Seção~\ref{sec:protocolo_midi} detalha o protocolo MIDI (Interface Digital para Instrumentos Musicais, do inglês \textit{Musical Instrument Digital Interface}), apresentando seu propósito, funcionamento e as mensagens mais relevantes para o controle expressivo do sistema. Por fim, na Seção~\ref{sec:teoria_musical}, revisam-se os principais conceitos de teoria musical aplicados ao mapeamento gestual — escala cromática, oitavas, articulações (notas curtas e destacadas, \textit{staccato}; ou notas fluidas e ligadas, \textit{legato}) e efeitos como modulação de afinação e frequência (\textit{pitch bend} e \textit{vibrato}), sustentação (\textit{sustain}) e dinâmica — que fundamentaram o \textit{design} do instrumento.
+
+\section{Fundamentos da Computação Musical}
+\label{sec:fundamentos_computacao_musical}
+
+A computação musical concentra-se na aplicação de algoritmos e modelos computacionais para criar, analisar e modificar sons de maneira flexível e precisa. Conforme destacado por Miranda (\citeyear{Miranda2002}), esse campo abrange desde a geração programada de timbres até a modelagem de estruturas musicais complexas e sistemas de execução (\textit{performance}) interativa. Dodge e Jerse (\citeyear{Dodge1997}) enfatizam o papel do computador na realização de tarefas sonoras avançadas, enquanto Moore (\citeyear{Moore1990}) evidencia a importância da representação digital do som, permitindo seu armazenamento e processamento eficientes.
+
+O processo inicia-se com a conversão de um sinal analógico em dados numéricos, por meio de dois estágios principais: a amostragem, que mede a amplitude do sinal em instantes regulares, e a quantização, que mapeia essas medições para valores discretos \cite{Rossing2002}. Essa sequência de valores numéricos serve de base para todas as operações subsequentes.
+
+A síntese sonora gera sons por meio de modelos computacionais em vez de gravações acústicas. Na síntese aditiva, ondas senoidais puras são somadas para formar timbres; na síntese subtrativa, sinais ricos em harmônicos são filtrados para moldar o espectro sonoro. A modulação de frequência (FM) altera dinamicamente a frequência de uma portadora por uma moduladora, produzindo timbres expressivos, enquanto a síntese granular emprega pequenos fragmentos de áudio (os ``grãos'') para criar texturas sonoras singulares \cite{Manning1993}.
+
+O processamento de áudio digital manipula gravações pré-existentes por meio de técnicas como filtragem, equalização, compressão, reverberação e aplicação de efeitos especiais, aprimorando a qualidade sonora e possibilitando transformações criativas \cite{Zolzer2011}. Essas operações são largamente empregadas em Estações de Trabalho de Áudio Digital (\textit{Digital Audio Workstations} - DAWs) para modelar o som conforme a intenção artística.
+
+As aplicações da computação musical incluem a criação de instrumentos digitais equipados com sensores e controladores, a composição assistida por computador que apoia o desenvolvimento de ideias melódicas e estruturais, e sistemas interativos que respondem em tempo real aos gestos do intérprete (\textit{performer}). Adicionalmente, métodos de análise e recuperação de informação musical permitem indexar e buscar repertórios com base em atributos como melodia, ritmo e timbre \cite{Cope2001}.
+
+No contexto deste trabalho, esses fundamentos habilitaram a captação e interpretação de gestos corporais e seu mapeamento para mensagens MIDI coerentes. A etapa de quantização assegurou precisão na conversão dos sinais de movimento, enquanto a síntese e o processamento digital compõem o ambiente sonoro no \textit{software} receptor. Ao integrar esses elementos, o hiperinstrumento desenvolvido amplia as possibilidades expressivas do intérprete, tornando seu corpo parte ativa da criação musical.
+
+\section{O Protocolo MIDI (Musical Instrument Digital Interface)}
+\label{sec:protocolo_midi}
+
+Desde seu surgimento em meados de 1983, o protocolo MIDI estabeleceu-se como padrão onipresente para comunicação de eventos musicais entre controladores, sintetizadores e sequenciadores, permitindo que equipamentos de fabricantes distintos interagissem de forma consistente e interoperável \cite{SMC2023MIDI,MIDI1DetailedSpec}. Essa universalidade viabilizou a criação de um ecossistema diversificado de equipamentos físicos (\textit{hardware}) e lógicos (\textit{software}), moldando práticas de produção, \textit{performance} e composição musical ao longo de décadas. Porém, à medida que as demandas por expressividade mais refinada, controle de alta precisão e interação em tempo real evoluíram, especialmente em contextos de performance gestual, tornaram-se evidentes limitações do MIDI 1.0, tais como resolução restrita de parâmetros, comunicação predominantemente unidirecional e ausência de mecanismos de autoconfiguração \cite{MIDI2Overview2023}.
+
+Em cenários de interfaces musicais gestuais de baixa latência e alta expressividade, como o projeto Aerochord, essas restrições tornam-se especialmente críticas: o mapeamento fino de gestos a parâmetros sonoros exige curvas de resposta suaves, confirmação de capacidades do dispositivo receptor e sincronização precisa de eventos. Foi essa necessidade que motivou a adoção do MIDI 2.0 no projeto, cuja arquitetura revisada introduz inovações concebidas para atender a tais exigências sem abandonar a compatibilidade retroativa com o ecossistema existente. Nesta seção, são apresentados inicialmente os fundamentos e as limitações do protocolo MIDI 1.0. Em seguida, discute-se a arquitetura técnica e as novas capacidades do MIDI 2.0, demonstrando como elas fundamentaram a escolha desse protocolo como pilar tecnológico do Aerochord.
+
+\subsection{Fundamentos e Limitações do MIDI 1.0}
+O protocolo MIDI 1.0 opera como um sistema de transmissão de instruções musicais, transportando mensagens que indicam eventos sem veicular o áudio propriamente dito \cite{SMC2023MIDI,MIDI1DetailedSpec}. Os eventos mais comuns incluem ativação e desativação de notas (\textit{Note On} e \textit{Note Off}), intensidade do toque (\textit{Velocity}), mudanças de parâmetros de som (\textit{Control Change}), troca de instrumentos (\textit{Program Change}), dobra de afinação (\textit{Pitch Bend}) e mensagens exclusivas de fabricantes (\textit{System Exclusive} ou \textit{SysEx}). Cada mensagem é composta por um byte de estado (com bit alto indicando tipo de mensagem e canal) seguido de um ou dois bytes de dados (com 7 bits significativos), refletindo a concepção original de comunicação serial a 31,25 kbps. Essa taxa de transferência definia limites para o número de eventos simultâneos que poderiam ser enviados sem comprometer significativamente a latência ou gerar congestionamento na linha.
+
+Ao unificar equipamentos de fabricantes distintos, o MIDI 1.0 estabeleceu um ecossistema interoperável, permitindo que controladores e DAWs compartilhassem mensagens comuns. Essa compatibilidade retroativa sustenta uma vasta base instalada de dispositivos e aplicou-se também ao Aerochord, que implementou a capacidade de enviar mensagens em modo legado a sintetizadores sem suporte a MIDI 2.0, assegurando que usuários com equipamentos existentes possam integrar o sistema sem barreiras.
+
+Entretanto, para aplicações que demandam expressividade refinada e baixa latência a concepção original do MIDI 1.0 revela limitações críticas. A resolução de 7 bits em \textit{Control Changes} e \textit{Velocity} implica apenas 128 passos discretos, frequentemente resultando em saltos audíveis em variações contínuas; o \textit{Pitch Bend} afeta todas as notas de um mesmo canal simultaneamente, impedindo modulações individuais em acordes polifônicos; a comunicação é primordialmente unidirecional; o número restrito de 16 canais por porta limita distinções granulares; e a ausência de marcas de tempo (\textit{timestamps}) embutidas impede compensações automáticas de variações no tempo de chegada dos dados (\textit{jitter})\footnote{Variação no atraso da transmissão de dados sobre uma rede ou barramento, causando irregularidades e possíveis problemas de sincronização.}. Esses fatores se tornam especialmente significativos no Aerochord, em que a fluidez do mapeamento de gestos exigiu curvas suaves e sincronização precisa que ultrapassam o escopo do padrão legado \cite{MIDI2Overview2023}.
+
+\subsection{Arquitetura Técnica do MIDI 2.0}
+O surgimento do MIDI 2.0 representa uma resposta direta às limitações identificadas no protocolo legado, oferecendo compatibilidade retroativa ao introduzir mecanismos bidirecionais que permitem autoconfiguração e descoberta de capacidades entre instrumentos \cite{MIDI2Overview2023}. Essa evolução foi motivada pela necessidade de suportar demandas de expressividade refinada em tempo real, onde a fluidez gestual é um requisito central.
+
+No cerne da nova arquitetura estão os Pacotes MIDI Universais (\textit{Universal MIDI Packets} - UMP), que redefinem o formato de mensagens para 32, 64 ou 128 bits, com campos que incluem tipo de mensagem, grupo, canal/comando e, opcionalmente, \textit{timestamp} embutido \cite{UMPProtocol2023}. Essa estrutura ampliada possibilita transportar dados de alta resolução e atuar com controladores por nota individual (\textit{per-note controllers})\footnote{Controladores que permitem ajustar parâmetros como volume, afinação e timbre de cada nota individualmente, diferentemente dos controles comuns que afetam todo o canal.}. A inclusão de \textit{timestamps} internos em UMP contribuiu para a redução de \textit{jitter}, pois os eventos gestuais do Aerochord são marcados no momento exato de captura e alinhados na cadeia de envio, garantindo uma resposta sonora consistente.
+
+A descoberta de capacidades passa a ser realizada por meio da Consulta de Capacidades MIDI (\textit{MIDI Capability Inquiry} - MIDI-CI), em que um dispositivo envia mensagens de busca e recebe detalhes sobre o suporte a MIDI 2.0 e propriedades configuráveis \cite{MIDICI2023}. Esse protocolo de negociação inicial (\textit{handshake}) transforma a comunicação "cega" em uma negociação inteligente: o Aerochord identifica automaticamente se o receptor aceita mensagens UMP, dispensando configurações manuais extensas.
+
+Em sequência, os Perfis (\textit{Profiles}) e a Troca de Propriedades (\textit{Property Exchange}) permitem compartilhar conjuntos padronizados de regras. Os perfis definem como interpretar mensagens em contextos específicos (ex: mapeamentos para \textit{per-note controllers}), enquanto o \textit{Property Exchange} possibilita consultar e ajustar dinamicamente parâmetros remotos, como curvas de resposta, sem sair da sessão \cite{MIDICIProfiles2023,MIDIPropertyExchange2023}. 
+
+A arquitetura também prevê flexibilidade de transporte: pacotes UMP podem trafegar via USB, \textit{Bluetooth} ou rede, ao mesmo tempo em que existe uma contingência (\textit{fallback}) para encapsular mensagens em conexões MIDI 1.0 legadas \cite{UMPProtocol2023}. Essa adaptabilidade garante operação em múltiplas plataformas, mantendo a funcionalidade básica mesmo em dispositivos antigos.
+
+Por fim, a existência de até 16 grupos independentes, cada um com 16 canais, permite separar fluxos de controle distintos — por exemplo, gestos da mão não dominante e da mão dominante podem ser alocados a grupos distintos, evitando colisão de comandos. Essa organização refletiu-se diretamente na arquitetura interna do Aerochord, onde a camada de roteamento destina os eventos aos grupos de forma estruturada, sustentando a baixa latência exigida.
+
+\subsection{Novas Capacidades Expressivas do MIDI 2.0}
+Ao redefinir o formato e introduzir mecanismos de maior resolução, o MIDI 2.0 abre espaço para ganhos expressivos inimagináveis no padrão legado, os quais se refletiram diretamente no Aerochord \cite{MIDI2Overview2023,UMPProtocol2023}.
+
+A alta resolução representa um avanço fundamental: valores de \textit{Velocity} passam a ter 16 bits e \textit{Control Changes} podem alcançar 32 bits, eliminando saltos audíveis. No Aerochord, onde pequenas alterações de gesto modulam contínua e simultaneamente vários efeitos, essa granularidade estendida assegurou que o mapeamento refletisse nuances sutis sem artefatos \cite{UMPProtocol2023}.
+
+Outra capacidade expressiva é o suporte a controle por nota individual. Diferentemente do MIDI 1.0, o MIDI 2.0 permite enviar mensagens de afinação, modulação ou pressão após o toque (\textit{aftertouch}) para notas específicas dentro de um acorde. Esse recurso viabilizou que o Aerochord aplicasse afinação apenas a uma nota sustentada (\textit{UMP MT4 Opcode 0x6}), enquanto as outras permanecem estáveis, enriquecendo texturas polifônicas de modo antes inviável.
+
+O transporte de blocos estruturados de dados torna-se mais robusto, permitindo enviar configurações e predefinições completas (\textit{presets}) de sintetizadores em formato padronizado. A padronização desses mecanismos facilita a portabilidade e a experimentação colaborativa, integrando-se à calibração dinâmica em tempo real \cite{MIDIPropertyExchange2023}. 
+
+\subsection{Persistência de Performances e Arquivos}
+Registrar performances gestuais com fidelidade é fundamental para edição e análise detalhada. Em instrumentos como o Aerochord, cada gesto traduzido em MIDI 2.0 contém dados de alta resolução e \textit{timestamps} que documentam a evolução temporal exata dos controles.
+
+O formato Arquivo de Clipe MIDI (\textit{MIDI Clip File}), baseado em UMP, oferece suporte à gravação de sequências contendo mensagens de alta resolução e \textit{timestamps} embutidos \cite{MIDIClipFile2023}. Em complemento, o Arquivo Contêiner (\textit{Container File}) permite agrupar múltiplos clipes e metadados, formando um pacote coeso. 
+
+No contexto de avaliação do Aerochord, a persistência de eventos (implementada através do modo de avaliação analítica, \textit{eval mode}, exportando para arquivos tabulares) e os registros (\textit{logs}) precisos de eventos de ponta a ponta (\textit{end-to-end}) desempenharam um papel vital na medição de latência e de precisão do sistema.
+
+\subsection{Justificativa Final para a Arquitetura do Aerochord}
+Em síntese, as capacidades do MIDI 2.0 — alta resolução, controle por nota individual, autoconfiguração via MIDI-CI e \textit{timestamps} — atenderam diretamente aos requisitos de expressividade e robustez que nortearam o Aerochord \cite{UMPProtocol2023,MIDICI2023,MIDIPropertyExchange2023,MIDIClipFile2023}.
+
+Em termos de aplicação concreta, a distância entre os dedos pôde controlar filtros sonoros suavemente sem saltos audíveis. Ao sustentar acordes, gestos de vibração geraram modulação independente em notas específicas. Além disso, ao conectar-se internamente, o Aerochord integrou uma porta virtual em modo MIDI 2.0, configurando parâmetros (\textit{setup}) de forma transparente.
+
+O suporte a MIDI 2.0 não foi meramente um recurso opcional, mas o elemento central para viabilizar o controle gestual de alta precisão alcançado. A adoção do padrão potencializou a missão de democratização, oferecendo uma exploração fina com resposta sonora refinada.
+
+\section{Teoria Musical Aplicada}
+\label{sec:teoria_musical}
+
+Esta seção apresenta os fundamentos da teoria musical que serviram de base para o mapeamento gestual no sistema Aerochord. Serão abordados os conceitos de escala cromática e oitavas \cite{benward2014music}. Em seguida, noções de articulação, como \textit{staccato} e \textit{legato} \cite{duckworth2015creative}. Por fim, revisam-se efeitos como \textit{vibrato, pitch bend, sustain} e dinâmica, implementados a partir das variações nos gestos captados \cite{Dodge1997}.
+
+\subsection{Escala Cromática e Oitavas}
+\label{sec:teoria_musical_escalas}
+
+A escala cromática consiste na divisão da oitava em doze semitons iguais, representando a menor unidade de distância entre duas notas no sistema temperado. Cada semitom equivale a um aumento fixo de frequência, criando um sistema padronizado \cite{benward2014music}.
+
+No contexto do MIDI, cada nota é representada por um número inteiro de 0 a 127. A nota Dó central (C4 ou MIDI 60) serve como referência, onde aumentos de valor representam semitons sucessivos. As oitavas são formadas por doze semitons (relação de frequência 2:1), percebidas como uma repetição da mesma nota em um registro mais agudo \cite{duckworth2015creative}. Essa percepção invariável foi explorada no Aerochord por meio dos gestos de seleção.
+
+Do ponto de vista do \textit{design} gestual, o mapeamento suporta usuários destros e canhotos. A altura vertical do quadro de visão da câmera foi dividida em doze zonas discretas (semitons) ativadas pela \textbf{mão dominante} (a mão que atua na articulação principal das notas). Simultaneamente, movimentos verticais macro da \textbf{mão não dominante} determinavam a transição entre oitavas. Isso possibilitou ao usuário navegar por registros diferentes de forma ergonômica, independentemente de sua lateralidade.
+
+\subsection{Articulações}
+\label{sec:teoria_musical_articulacoes}
+
+As articulações musicais determinam como as notas se conectam. O \textit{staccato} indica notas breves e destacadas. No Aerochord, esse efeito é reproduzido por movimentos rápidos e secos, como um fechamento súbito dos dedos seguido de uma liberação imediata, gerando notas curtas \cite{duckworth2015creative}.
+
+Por outro lado, o \textit{legato} indica uma execução fluida. Em termos técnicos, significa a emissão de um \textit{Note On} antes do \textit{Note Off} da nota anterior, criando sobreposição. No Aerochord, isso foi interpretado permitindo o deslize da mão dominante fechada entre as zonas verticais de nota. Essa abordagem exigiu lógica computacional precisa para gerir as fronteiras, utilizando zonas mortas (\textit{dead zones} - áreas de tolerância de entrada) e configurações de estabilização do sinal para evitar ativações duplas indesejadas \cite{benward2014music}.
+
+\subsection{Efeitos de expressividade}
+\label{sec:teoria_musical_efeitos}
+
+A expressividade musical reflete a resposta a nuances da execução. O \textit{vibrato} é a modulação periódica na frequência da nota. No MIDI 2.0, seu controle opera com alta granularidade \cite{midi_org}. No Aerochord, esse efeito foi gerado a partir de pequenos movimentos oscilatórios laterais da mão dominante durante a ativação da nota.
+
+O \textit{pitch bend} altera a afinação de forma contínua. Tratado como \textit{Per-Note Pitch Bend} (atributo por nota) em MIDI 2.0, o sistema interpretou deslocamentos angulares de inclinação da mão dominante para realizar transições melódicas fluídas, mapeando a rotação diretamente para o valor de afinação da nota em andamento \cite{midi_org}.
+
+O \textit{sustain} refere-se à capacidade de manter o som após o término da ação física. A manutenção da \textbf{mão não dominante} aberta (em repouso vertical temporário) foi mapeada para acionar e desativar o \textit{sustain}, garantindo que as notas ativadas pela \textbf{mão dominante} pudessem permanecer soando de maneira análoga ao pedal de sustentação de um piano.
+
+A dinâmica diz respeito à intensidade sonora (comumente tratada na música tradicional sob termos como \textit{piano}, \textit{forte} e \textit{crescendo}). No protocolo MIDI, a dinâmica do ataque da nota é controlada pelo \textit{velocity}. No projeto, a velocidade de fechamento dos dedos da mão dominante (distância mensurada em janelas de tempo) foi calculada pelo \textit{software} e mapeada para a intensidade da nota, permitindo ataques percussivos suaves ou agressivos conforme a intenção do usuário \cite{benward2014music}.
+
+\section{Considerações sobre o Capítulo}
+\label{sec:consideracoes_cap3}
+
+Ao longo deste capítulo, foram apresentados os fundamentos da computação musical e explorado o protocolo MIDI. Demonstrou-se como o MIDI 2.0 reverteu obstáculos de baixa resolução por meio de pacotes universais (UMP) e consultas automáticas (MIDI-CI).
+
+A compreensão dessas especificações técnicas constituiu o alicerce sobre o qual a arquitetura de \textit{software} do Aerochord se apoiou. A capacidade de endereçar dados de alta resolução e controlar a afinação (\textit{pitch bend}) de cada nota individualmente foi o elemento-chave que viabilizou o mapeamento fluido implementado.
+
+Com os conceitos de IHC, teoria musical e protocolo MIDI firmemente estabelecidos, o Capítulo~\ref{cap:analise_estado_arte_interfaces_musicais_gestuais} aprofundará a revisão da literatura, examinando soluções existentes para delimitar exatamente o cenário onde a proposta de solução (detalhada no Capítulo~\ref{chap:desenvolvimento_proposta}) foi implementada.

@@ -1,0 +1,143 @@
+\chapter{Estado da Arte em Interfaces Musicais Gestuais}
+\label{cap:analise_estado_arte_interfaces_musicais_gestuais}
+
+Uma análise do estado da arte em interfaces musicais gestuais deve ir além da simples catalogação de tecnologias e dispositivos: é preciso centrar a investigação nos paradigmas de interação que essas soluções viabilizam e nas concessões mútuas (\textit{trade-offs}) implícitas em cada abordagem. Essa perspectiva não se limita a enumerar sensores, bibliotecas ou arcabouços de desenvolvimento (\textit{frameworks}), mas busca compreender como, historicamente e atualmente, diferentes formas de captação gestual, mapeamento e entrega de retorno sensorial (\textit{feedback}) procuram equilibrar três pilares cruciais: a fidelidade na captura dos gestos, a expressividade resultante no domínio sonoro e a acessibilidade de uso para perfis diversos de usuários.
+
+Este capítulo segue uma narrativa estruturada em etapas complementares. Primeiramente, é explorado como paradigmas clássicos — de sistemas baseados em contato físico dedicado a gestos livres em espaço tridimensional ou a capturas por visão monocular — moldaram o que hoje se entende como possibilidades e limitações em interfaces musicais gestuais. Em seguida, discute-se o desafio central do mapeamento gesto–som, investigando tanto estratégias discretas e contínuas, bem como filosofias de projeto (\textit{design}) orientadas a priorizar o movimento (\textit{movement-first}) ou priorizar o som (\textit{sound-first}). Na sequência, exploram-se métodos de avaliação, perfis de usuário e cenários de aplicação, situando cada abordagem em contextos reais e em requisitos de usabilidade, latência e expressividade. Por fim, apresenta-se uma síntese crítica das principais soluções existentes, destacando suas potencialidades e limitações, com o objetivo de identificar lacunas e oportunidades que informaram o desenvolvimento prático do Aerochord.
+
+O projeto Aerochord surgiu nesse contexto como uma solução que aproveitou os avanços recentes em Inteligência Artificial e técnicas de processamento em tempo real para maximizar a expressividade musical a partir de gestos, mantendo-se universalmente acessível. Ao longo deste capítulo, a caracterização dos paradigmas vigentes e a análise crítica de suas forças e fraquezas servirão de base para justificar e fundamentar as escolhas de arquitetura, mapeamento e avaliação que distinguem a implementação prática do sistema. Dessa forma, este Estado da Arte estabelece o alicerce conceitual para a justificativa de inovação do projeto e para a definição de suas metas atingidas em termos de fidelidade de captura, qualidade do mapeamento e inclusão de usuários em cenários diversos.
+
+\section{Paradigmas de Interação em Interfaces Musicais Gestuais}
+\label{sec:paradigmas_interacao_interfaces_musicais_gestuais}
+
+Nesta seção, analisamos as principais formas de interação gestual em interfaces musicais, agrupadas conforme o tipo de experiência proporcionada ao intérprete (\textit{performer}). O foco está em revelar como as tecnologias empregadas moldam diferentes paradigmas de controle expressivo, revelando os compromissos entre fidelidade na captura, potencial expressivo e acessibilidade e como essas lições orientaram o projeto do Aerochord.
+
+\subsection{Interação de Alta Fidelidade com Contato Físico}
+\label{subsec:iteracao_alta_fidelidade}
+
+O paradigma de alta fidelidade com contato físico é tradicionalmente exemplificado pelas luvas de dados (\textit{data gloves}), que empregam sensores de flexão nos dedos e, frequentemente, Unidades de Medição Inercial (IMUs) para estimar orientação e aceleração espacial \cite{dipietro2008survey, rovan1997instrumental}. Essa combinação possibilita captar nuances finas, tais como a taxa de curvatura das juntas digitais, a velocidade de flexão e pequenas variações de posição, o que viabiliza mapeamentos multiparamétricos e contínuos sobre síntese sonora ou processamento de efeitos em cenários que exigem controle detalhado de múltiplos graus de liberdade. Em contextos de pesquisa e \textit{performance} profissional, essa fidelidade extrema oferece sensibilidade para traduzir sutilezas de expressão em variações sonoras muito precisas.
+
+Entretanto, o alto custo de equipamento físico (\textit{hardware}) especializado e a complexidade de calibração — ajustar sensores de flexão para cada mão, compensar derivações de IMUs e atualizar configurações para diferentes execuções — restringem essa abordagem a nichos com recursos dedicados. O caráter invasivo de exigir que o \textit{performer} “vista” o dispositivo impõe barreiras físicas e psicológicas, pois a sensação de restrição das mãos e a fadiga em sessões prolongadas podem comprometer a espontaneidade e o conforto durante a \textit{performance}. Além disso, a dependência de manutenção e a suscetibilidade a falhas de sensor por mau encaixe ou interferência elevam o risco de instabilidade em tempo real.
+
+Neste cenário, percebe-se que as luvas de dados funcionam como um instrumento de precisão extrema. Por outro lado, o Aerochord priorizou acessibilidade e simplicidade, dispensando vestimentas tecnológicas específicas e custos elevados. Ao invés de buscar os mesmos níveis de detalhamento das luvas, o Aerochord concentrou-se em atingir uma fidelidade gestual suficiente para permitir expressividade musical, utilizando visão computacional e aprendizado de máquina com equipamentos comuns. Com isso, reduziu-se a necessidade de calibração complexa e ampliou-se o potencial de uso em contextos diversos.
+
+\subsection{Gestos Livres em Volume 3D}
+\label{subsec:gestos_livros_volume_3d}
+
+O paradigma de gestos livres em volume tridimensional (3D) explora o rastreamento corporal em espaço sem contato físico, permitindo movimentos amplos e performáticos. O Microsoft Kinect popularizou essa abordagem ao oferecer rastreamento esquelético completo em tempo real por meio de câmeras de profundidade acessíveis ao consumidor \cite{shotton2011real}. Essa tecnologia permitiu que intérpretes acionassem eventos sonoros por gestos expansivos, como movimentos amplos de braço para modular filtros ou disparar amostras sonoras (\textit{samples}), conferindo dimensão cênica às apresentações \cite{KinectMusic2012}. Contudo, o Kinect impunha limitações em relação à zona de captura, com restrições de distância mínima e máxima, sensibilidade a condições de iluminação e resolução insuficiente para detalhes finos de mãos e dedos, o que restringe a exatidão em mapeamentos que exijam precisão manual.
+
+Em sequência, dispositivos como o Leap Motion Controller refinaram o paradigma ao focar em um “espaço de trabalho virtual” para rastreamento manual com infravermelho de curto alcance, proporcionando maior precisão nos gestos das mãos \cite{rautaray2012vision}. Nesse contexto, tornou-se viável conjugar gestos amplos capturados por câmeras com sensor de profundidade com manipulações finas detectadas por sensores dedicados, atendendo a aplicações que requerem simultaneamente controle de parâmetros amplos e sutis. Ainda assim, ambas as abordagens dependem de \textit{hardware} específico, o que implica custos adicionais e limita a flexibilidade de configuração do ambiente de \textit{performance}, além da suscetibilidade a ruído de luz ambiente e restrições físicas de posicionamento.
+
+O Aerochord avançou esse paradigma ao utilizar apenas câmeras RGB padrão, ampliando a flexibilidade da área de \textit{performance}. Algoritmos robustos de detecção de pose monocular (baseada em uma única lente) permitiram reconhecer gestos em espaços variados e sob condições de uso diversificadas, sem exigir sensores proprietários. Dessa forma, manteve-se o espírito de gestos livres em 3D, mas reduziu-se a dependência de \textit{hardware} dedicado, privilegiando acessibilidade e adaptabilidade a diferentes configurações de palco ou estúdio, sem descuidar da necessidade de precisão e confiabilidade de rastreamento para uso musical em tempo real.
+
+\subsection{Detecção de Pose com Visão Monocular}
+\label{subsec:deteccao_pose_visao_monocular}
+
+O paradigma de detecção de pose com visão monocular representa a fronteira mais recente em acessibilidade para interfaces musicais gestuais, viabilizada por avanços em redes neurais profundas e \textit{frameworks} como MediaPipe \cite{lugaresi2019mediapipe}. Hoje, é possível estimar posições articulares em duas dimensões (2D) e até reconstruções 3D aproximadas a partir de uma única câmera RGB, alcançando precisão crescente para rastrear articulações principais do corpo e detectar pontos de referência anatômicos (\textit{landmarks}) de mãos em tempo real. Essa abordagem democratiza o acesso, pois qualquer câmera convencional integrada a computadores portáteis ou \textit{smartphones} pode servir como sensor principal.
+
+Diversos protótipos acadêmicos exploram essa base. Projetos como o Hyper-Harp demonstram sistemas de harpa virtual baseados em rastreamento de pose monocular \cite{americo2020hyperharp}. Implementações de controle de som em tempo real por gestos revelam a viabilidade inicial, mas evidenciam desafios de otimização de latência e robustez a variações de iluminação, que podem comprometer a estabilidade do rastreamento em contextos de \textit{performance} ao vivo \cite{hassan2019gestureaudio}. Estudos preliminares indicam que a latência de ponta a ponta (\textit{end-to-end}) em esteiras de processamento (\textit{pipelines}) de visão monocular pode variar tipicamente entre 30 ms e 60 ms em \textit{hardware} comum \cite{lugaresi2019mediapipe, hassan2019gestureaudio}. 
+
+O trabalho Integrando a Dança e a Música em uma Arquitetura de \textit{Deep Learning} ilustra a integração de detecção monocular com redes profundas para geração musical, empregando OpenPose para classificar estilos e gerar sequências MIDI \cite{Lima2021Integrando}. Embora esse sistema demonstre a robustez das tecnologias para análise sob demanda (\textit{off-line}), seu foco recai sobre tarefas com menor exigência de latência. Em contraste, o Aerochord propôs e implementou um mapeamento direto e instantâneo, exigindo que cada nuance de movimento do \textit{performer} fosse refletida imediatamente no comportamento sonoro. Esse contraste reforçou a necessidade de otimizações de \textit{software}, culminando na escolha de C++/JUCE e \textit{pipelines} de processamento assíncronos, visando atender a requisitos de latência determinística.
+
+No Aerochord, a implementação em C++ com o \textit{framework} JUCE foi uma decisão de engenharia estratégica que visou minimizar a latência no \textit{pipeline} de detecção. Essa escolha distinguiu o projeto de muitos protótipos acadêmicos desenvolvidos em linguagens interpretadas, garantindo atualização imediata dos parâmetros sonoros assim que o gesto é reconhecido. Desse modo, o Aerochord aliou a acessibilidade intrínseca do paradigma monocular à robustez de engenharia necessária para atender seus usuários em cenários de \textit{performance} em tempo real.
+
+Esses três paradigmas — desde a fidelidade extrema das \textit{data gloves}, passando pelos gestos livres com \textit{hardware} dedicado, até a detecção monocular acessível — delineiam um espectro de \textit{trade-offs} entre precisão, expressividade e inclusão. A próxima seção examina como cada paradigma influencia as estratégias de mapeamento gesto–som.
+
+\section{Mapeamento Gesto-Som}
+\label{sec:mapeamento_gesto_som}
+
+O mapeamento entre gestos e parâmetros sonoros é frequentemente descrito como o “coração” de qualquer instrumento musical digital, pois funciona como ponte conceitual que traduz a intenção expressiva do \textit{performer} em variações sonoras audíveis. Mesmo que uma interface gestual ofereça captura de alta fidelidade ou acessibilidade ampliada, sem um mapeamento bem concebido o resultado tende a ser artificial ou pouco expressivo. 
+
+\subsection{Estratégias de Mapeamento}
+\label{subsec:estrategias_mapeamento}
+
+Uma distinção fundamental em estratégias de mapeamento é entre mecanismos discretos e contínuos. Nos mapeamentos discretos, gestos específicos disparam eventos pontuais, como o envio de um comando de ativação de nota (\textit{Note On}) ou a execução de um \textit{sample} previamente definido, resultando em respostas binárias. Por outro lado, mapeamentos contínuos permitem que variações graduais em um gesto modulem parâmetros sonoros de forma fluida, como a distância entre dois dedos controlando volume.
+
+Em trabalhos clássicos, discute-se que a combinação de sensores deve contemplar ambos os tipos de mapeamento, de modo a oferecer tanto a capacidade de acionar eventos precisos quanto a modulação contínua \cite{wanderley2000gestural, cadoz2000gesture}. A literatura também explora estratégias híbridas, em que eventos discretos iniciam processos sonoros, como o começo de uma base harmônica contínua (\textit{pad}), e gestos contínuos modulam os parâmetros internos desse processo \cite{wanderley2000gestural}.
+
+No contexto do Aerochord, essa distinção foi adotada de forma integrada: a arquitetura desenvolvida oferece mapeamentos discretos (através da Máquina de Estados) para o disparo de notas, e mapeamentos contínuos para modulação fluida de parâmetros como a dobra de afinação (\textit{Pitch Bend}), criando performances que transitam suavemente entre precisão rítmica e exploração tímbrica.
+
+\subsection{Filosofias de Design de Mapeamento: \textit{Movement-First} vs. \textit{Sound-First}}
+\label{subsec:filosofias_mapeamento}
+
+Duas filosofias de \textit{design} de mapeamento são frequentemente contrapostas na literatura: a abordagem orientada ao movimento (\textit{movement-first}) e a abordagem orientada ao som (\textit{sound-first}). Na filosofia \textit{movement-first}, predomina a exploração do movimento como ponto de partida: o desenvolvedor parte da liberdade cinemática do gesto, buscando capturar variações naturais do corpo para então associá-las ao domínio sonoro. 
+
+Por outro lado, a filosofia \textit{sound-first} parte da definição prévia de resultados sonoros desejados, buscando mapeamentos que garantam precisão, repetibilidade e controle previsível. O \textit{design} estrutura o reconhecimento gestual de modo a satisfazer requisitos acústicos rigorosos. Essa abordagem prevalece em contextos em que a coerência sonora é prioritária \cite{wanderley2000gestural}.
+
+Em muitos projetos acadêmicos, observa-se que cada filosofia tende a ser aplicada isoladamente \cite{aigner2012understanding, vogiatzidakis2018gesture}. No Aerochord, o mapeamento buscou equilibrar essas filosofias ao implementar a Máquina de Estados (FSM) orientada ao controle preciso (\textit{sound-first}) para o gatilho das notas, e fluxos de dados contínuos para a modulação natural do gesto (\textit{movement-first}), não comprometendo a coerência entre intenção e resultado sonoro.
+
+\section{Avaliação, Usuários e Contextos de Uso}
+\label{sec:avaliacao_usuarios_contextos}
+
+Avaliar interfaces requer ir além de especificações puramente técnicas, pois a qualidade depende de fatores perceptivos que influenciam diretamente a aceitação. Esta seção apresenta métricas objetivas e subjetivas para mensurar desempenho e usabilidade.
+
+\subsection{Métricas e Metodologias de Avaliação}
+\label{subsec:metricas_metodologias}
+
+A avaliação de um Instrumento Musical Digital (IMD) difere da avaliação de uma interface convencional. Conforme argumenta O’Modhrain (\citeyear{OModhrain2011}), o critério de sucesso não se limita à completude ou rapidez de tarefas, mas estende-se ao potencial do instrumento para gerar uma experiência estética de qualidade.
+
+No cerne da avaliação residem critérios que vão além da usabilidade. Em primeiro lugar, a expressividade. Em segundo lugar, a tocabilidade (\textit{playability}), que engloba o quão satisfatório e fluido é o ato de tocar o instrumento. Por fim, a curva de aprendizado (\textit{learnability}), que se diferencia no baixo custo de entrada (\textit{low entry fee} - a facilidade para iniciantes) e no teto para virtuosidade (\textit{high ceiling} - a profundidade para usuários avançados) \cite{wanderley2002evaluation}.
+
+Para operacionalizar esses critérios, a avaliação adota abordagens mistas. Entre as métricas objetivas, destaca-se a medição da latência \textit{end-to-end}, entendida como o tempo decorrido entre o gesto físico e a resposta sonora \cite{lugaresi2019mediapipe, hassan2019gestureaudio}. O protocolo de avaliação do Aerochord ancorou-se nesta perspectiva objetiva de \textit{performance}. A estabilidade do \textit{pipeline} assíncrono e as avaliações empíricas de latência foram conduzidas rigorosamente para assegurar que a ferramenta atinja a tocabilidade necessária.
+
+\subsection{Perfis de Usuário e Cenários de Aplicação}
+\label{subsec:perfis_cenarios}
+
+As interfaces musicais atendem perfis diversificados. Soluções que dependem de \textit{hardware} dedicado tendem a restringir-se a nichos com maior orçamento. Em contraste, abordagens que utilizam \textit{webcams} demonstram grande potencial para aplicações de baixo custo e ambientes educacionais \cite{americo2020hyperharp, vamvakousis2016eyeharp}.
+
+O Aerochord posicionou-se como ferramenta focada na democratização: projetado para atacar três barreiras interligadas. A barreira econômica foi enfrentada pela exigência de equipamento mínimo. A barreira da proficiência técnica foi contornada por meio de uma interface intuitiva. E a barreira da limitação motora foi abordada ao permitir controle através de gestos de alcance variado, reduzindo a necessidade exclusiva de motricidade fina extrema.
+
+\section{Síntese Crítica e Posicionamento do Aerochord}
+\label{sec:sintese_critica}
+
+A partir da análise detalhada, torna-se possível realizar uma síntese crítica do campo de interfaces musicais gestuais.
+
+\subsection{Mapeamento Comparativo das Abordagens}
+\label{subsec:comparativo_abordagens}
+
+A Tabela~\ref{tab:comparativo_detalhado} apresenta de forma estruturada os principais parâmetros considerados em cada abordagem.
+
+\begin{table}[ht]
+    \centering
+    \caption{Comparativo detalhado de paradigmas e sistemas em interfaces musicais gestuais}
+    \label{tab:comparativo_detalhado}
+    \resizebox{\textwidth}{!}{%
+    \begin{tabular}{p{4.2cm} p{2.8cm} p{3.2cm} p{2.8cm} p{3.8cm} p{3.8cm}}
+        \toprule
+        \textbf{Sistema/Referência} & \textbf{Paradigma de Interação} & \textbf{Tecnologia de Captura} & \textbf{Hardware Requerido} & \textbf{Nível de Expressividade (Potencial)} & \textbf{Acessibilidade (Custo/Facilidade)} \\
+        \midrule
+        Data Gloves\\ \cite{dipietro2008survey} & Contato Físico de Alta Fidelidade & Sensores de flexão e IMUs nas luvas & Luvas especializadas; estação de calibração & Muito alto: captura de detalhes de articulações, mapeamentos multiparamétricos & Baixa: custo elevado, calibração complexa, restrição ergonômica \\
+        \midrule
+        Kinect e similares\\ \cite{shotton2011real} & Gestos Livres em Volume 3D & Câmera com sensor de profundidade para rastreamento esquelético & Câmera com sensor de profundidade dedicada & Moderado a alto para gestos amplos, limitado em detalhes de mãos & Moderada: custo de sensor, requisitos de ambiente controlado \\
+        \midrule
+        Leap Motion\\ \cite{zhang2019gestureteleop, rautaray2012vision} & Gestos Livres em Volume 3D Focado em Mãos & Sensor infravermelho de curto alcance & Dispositivo Leap Motion ou similar & Alto para gestos manuais finos & Moderada: \textit{hardware} adicional e área de interação limitada \\
+        \midrule
+        Visão Monocular\\(MediaPipe) \cite{lugaresi2019mediapipe} & Detecção de Pose com Câmera RGB & \textit{Framework} de visão (MediaPipe ou equivalente) & Webcam comum (integrada ou USB) & Moderado a bom: com filtragem e mapeamentos híbridos & Elevada: baixo custo, sem equipamento extra, mas sensível a condições ambientais \\
+        \midrule
+        EyeHarp\\ \cite{vamvakousis2016eyeharp} & Rastreamento de Olhar e Seleção por Dwell-Time & Rastreador ocular (\textit{eye tracker}) ou \textit{webcam} adaptada & \textit{Eye tracker} dedicado ou configuração de \textit{webcam} & Moderado para seleção e sequenciamento, limitado em dinâmica rápida & Alta para mobilidade reduzida, porém não ideal para \textit{performance} ágil \\
+        \midrule
+        Sensores Inerciais (IMUs)\\ \cite{dipietro2008survey} & Rastreamento de Movimento Amplo & IMUs em dispositivos vestíveis (\textit{wearables}) como relógios inteligentes (\textit{smartwatches}) & Dispositivo com IMU integrado & Moderado para modulação ampla, baixo para detalhes manuais & Elevada: \textit{hardware} leve e barato, mas insuficiente isoladamente para controle preciso de notas \\
+        \bottomrule
+    \end{tabular}%
+    }
+\end{table}
+
+A análise revela tendências claras: existe uma correlação inversa entre o uso de \textit{hardware} dedicado e o nível de acessibilidade.
+
+\subsection{A Lacuna Identificada e a Proposta de Valor do Aerochord}
+\label{subsec:lacuna_proposta}
+
+A síntese apresenta um \textit{trade-off} persistente: de um lado, sistemas de alta precisão demandam investimentos significativos. De outro, abordagens baseadas em \textit{webcam} não são concebidas com foco na minimização extrema de latência nem na exploração aprofundada de protocolos como o MIDI 2.0.
+
+O Aerochord preencheu precisamente essa lacuna ao unir três pilares fundamentais. O primeiro pilar trata da máxima acessibilidade: exigindo apenas \textit{webcam}. O segundo pilar aborda a baixa latência, por meio de uma arquitetura implementada em C++/JUCE. O terceiro pilar corresponde ao compromisso com alta expressividade, integrando nativamente o protocolo MIDI 2.0. 
+
+\section{Tendências e Perspectivas Futuras}
+\label{sec:tendencias_perspectivas}
+
+Após a análise do panorama atual, torna-se evidente que vetores apontam para direções promissoras, como integração de Inteligência Artificial em mapeamentos e fusão com Realidade Aumentada e Virtual (\textit{Augmented Reality / Virtual Reality} - AR/VR).
+
+Espera-se que modelos de aprendizado de máquina possam capturar o vocabulário gestual de um músico, ajustando automaticamente curvas de resposta \cite{caramiaux2014mapping}. A arquitetura do Aerochord, concebida de forma modular e desacoplada, revelou-se ideal para essa evolução.
+
+Outra frente de inovação envolve a integração com ambientes de realidade mista. Nesse contexto, o Aerochord funciona como um controlador eficiente que pode ter suas saídas de dados direcionadas a motores (\textit{engines}) de áudio ou jogos imersivos.
+
+Em síntese, o Aerochord, ao preencher hoje a lacuna entre acessibilidade, baixa latência e expressividade, consolidou-se como uma plataforma cujas camadas podem ser estendidas para incorporar inovações, projetando-se como alicerce para pesquisas futuras.
