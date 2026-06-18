@@ -1,0 +1,75 @@
+\chapter{Testes e Análise de Resultados}
+\label{chap:testes_resultados}
+
+Após o desenvolvimento e a implementação da arquitetura do Aerochord, tornou-se imperativo submeter o sistema a um rigoroso processo de validação empírica. Este capítulo detalha os testes realizados para aferir se a ferramenta atingiu as metas propostas nos requisitos não funcionais e funcionais.
+
+A avaliação foi dividida em três frentes complementares. Na Seção~\ref{sec:avaliacao_desempenho}, analisam-se os dados objetivos de desempenho do sistema operando em tempo real, com foco na medição estatística da latência de ponta a ponta (\textit{end-to-end}) e no consumo de recursos da máquina. Na Seção~\ref{sec:avaliacao_qualitativa}, discute-se a estabilidade do rastreamento gestual e a qualidade percebida das articulações e mapeamentos. Por fim, na Seção~\ref{sec:teste_usabilidade}, apresenta-se um teste piloto de usabilidade conduzido com um voluntário, visando validar a acessibilidade técnica e a curva de aprendizagem do hiperinstrumento.
+
+\section{Avaliação de Desempenho Técnico e Latência}
+\label{sec:avaliacao_desempenho}
+
+O requisito técnico mais crítico para qualquer Instrumento Musical Digital é a manutenção de uma latência imperceptível para o intérprete, garantindo a sensação de causalidade imediata entre o gesto físico e o evento sonoro. A literatura estabelece que latências de ponta a ponta abaixo de 30 milissegundos (ms) são consideradas ideais para preservar a tocabilidade em interfaces musicais interativas.
+
+Para medir essa métrica, o Aerochord foi executado em um computador de uso comum, equipado com sistema operativo Linux, utilizando o modo analítico (\texttt{--eval}). Neste modo, o \textit{software} regista marcações temporais (\textit{timestamps}) exatas no momento da captura de um quadro de vídeo e, em seguida, regista o momento exato em que a mensagem MIDI 2.0 correspondente é enviada para o sequenciador do sistema operacional.
+
+O teste de carga contínua consistiu na execução da aplicação por um período prolongado de interação ativa, gerando um conjunto de dados (\textit{dataset}) com 3.899 amostras de eventos musicais consecutivos.
+
+\subsection{Resultados de Latência}
+A análise estatística do ficheiro de registo gerado pelo sistema demonstrou resultados altamente satisfatórios, superando a meta estabelecida. Os dados recolhidos foram:
+\begin{itemize}
+    \item \textbf{Amostras totais:} 3.899 eventos.
+    \item \textbf{Latência Média:} 22,59 ms.
+    \item \textbf{Percentil 50 (P50 - Mediana):} 22,40 ms.
+    \item \textbf{Percentil 95 (P95):} 24,45 ms.
+    \item \textbf{Amostras abaixo de 30 ms:} 99,6\%.
+\end{itemize}
+
+O indicador P95 de 24,45 ms atesta que 95\% de todos os eventos musicais gerados pelo sistema — desde a lente da câmara até à saída MIDI — ocorreram em menos de 24,5 milissegundos. Este valor, associado a uma taxa de sucesso de 99,6\% das amostras abaixo da tolerância máxima de 30 ms, prova a eficácia da arquitetura concorrente baseada em filas livres de bloqueio (\textit{lock-free}) implementada em C++.
+
+\subsection{Consumo de Recursos do Sistema}
+O desempenho de baixa latência seria inviável se o consumo de recursos computacionais saturasse o sistema operacional, resultando no descarte de quadros (\textit{frame drops}). Durante os testes em tempo real (registados com PID 31956), a aplicação consumiu em média \textbf{25,72\% de CPU} e utilizou \textbf{116,7 MB de Memória RAM}. 
+
+Estes números demonstram que a integração da biblioteca MediaPipe nativa em C++ oferece um impacto computacional significativamente leve. O sistema preserva recursos suficientes para que o mesmo computador possa, simultaneamente, executar uma Estação de Trabalho de Áudio Digital (DAW) e processar sintetizadores virtuais pesados, cumprindo na íntegra a premissa de acessibilidade de \textit{hardware}.
+
+\subsection{Distribuição e Expressividade dos Eventos}
+A análise do \textit{dataset} de 3.899 amostras também revelou a distribuição por tipo de mensagem MIDI gerada durante a execução:
+\begin{itemize}
+    \item \textbf{Eventos de Nota (\textit{Note On / Note Off}):} 318 amostras (8,2\%).
+    \item \textbf{Controladores Contínuos (\textit{Control Change} - CC):} 2.550 amostras (65,4\%).
+    \item \textbf{Dobra de Afinação por Nota (\textit{Per-Note Pitch Bend}):} 1.031 amostras (26,4\%).
+\end{itemize}
+
+Este perfil de distribuição, onde aproximadamente 91,8\% das mensagens consistem em dados de modulação contínua (CC e Afinação), evidencia matematicamente a filosofia de \textit{design} focada no movimento (\textit{movement-first}). O Aerochord não funciona como um mero disparador de notas estáticas; a esmagadora maioria dos dados processados reflete a expressividade contínua do corpo do intérprete moldando o som no decurso do tempo.
+
+\section{Estabilidade e Avaliação Qualitativa}
+\label{sec:avaliacao_qualitativa}
+
+Além dos dados quantitativos, uma avaliação qualitativa do uso prolongado permitiu inferir a estabilidade e a ergonomia do instrumento sob condições reais.
+
+Observou-se que a detecção do gesto de "pinça" (gatilho de nota da mão dominante) obteve uma taxa de precisão qualitativa de aproximadamente 90\%. As falsas detecções (falsos positivos ou negativos) mostraram-se residuais e estão diretamente ligadas a condições do ambiente externo, nomeadamente ao enquadramento excessivamente descentrado da mão ou a condições de iluminação desfavoráveis, fatores inerentes a abordagens por visão monocular. Em condições de iluminação estável, o sistema mostrou-se altamente responsivo.
+
+O modo de transição fluida de notas (\textit{legato}), suportado pela sobreposição temporal de eventos através do algoritmo de programação, desempenhou a sua função de maneira satisfatória, assegurando transições limpas. Foram registadas falhas esporádicas no acoplamento das notas apenas em ocasiões onde os movimentos do utilizador excederam o limiar de tolerância algorítmico nas zonas de fronteira (zonas mortas).
+
+Quanto ao mapeamento de lateralidade, a alocação dos macro-controles (seleção de oitavas e volume) para a \textbf{mão não dominante} revelou-se natural. Constatou-se, contudo, que tocar articulações com a mão dominante enquanto se realizam saltos simultâneos de oitava com a mão não dominante exige coordenação e prática prévia por parte do executante. Por outro lado, performances confinadas a uma única oitava, utilizando ambas as mãos predominantemente para timbre e intensidade, demonstraram uma fluidez e curva de aprendizagem bastante acessíveis.
+
+\section{Teste Piloto de Usabilidade: Estudo de Caso}
+\label{sec:teste_usabilidade}
+
+Para atestar o pilar central da democratização e avaliar o baixo custo de entrada (que preconiza a utilização da interface por indivíduos sem formação musical), realizou-se um teste piloto empírico de usabilidade.
+
+O voluntário, designado como Participante 1 (P1), encaixa-se no perfil-alvo de acessibilidade: não possui treino musical formal nem contato rotineiro com instrumentos acústicos tradicionais, embora revele um interesse passivo por música. 
+
+\subsection{Metodologia do Teste e Curva de Aprendizagem}
+O teste foi conduzido num ambiente não controlado (doméstico). Foi fornecida a P1 uma breve instrução verbal, com duração inferior a 5 minutos, explicando a separação funcional da lateralidade (a mão dominante executa notas e a mão não dominante controla a região das oitavas e o volume). 
+
+Após a explicação inicial, P1 iniciou a exploração livre do hiperinstrumento. Sem qualquer necessidade de intervenção do investigador ou consulta a diagramas, o participante foi capaz de gerar sequências melódicas intencionais, controlando o volume e transitando entre oitavas logo nos primeiros minutos de utilização. O sucesso imediato de P1 em operar o Aerochord, em contraste direto com a longa curva de aprendizagem requerida por instrumentos de cordas ou sopro convencionais, suporta empiricamente a hipótese de que o sistema possui uma barreira técnica de entrada extremamente baixa.
+
+\subsection{Feedback Qualitativo e Limitações Identificadas}
+Após a sessão exploratória, o participante forneceu suas impressões verbais sobre a experiência (retorno sensorial / \textit{feedback} qualitativo). O sistema foi descrito como altamente reativo e de fácil compreensão mecânica.
+
+Entretanto, durante o relato final, P1 fez a seguinte observação crucial sobre a profundidade funcional da aplicação:
+\begin{quote}
+"Hoje vejo que só é possível tocar notas soltas no software. Seria interessante poder tocar acordes."
+\end{quote}
+
+Este apontamento evidencia não apenas a assimilação rápida do funcionamento da ferramenta por parte do participante, mas também identifica uma limitação funcional arquitetônica da versão atual do Aerochord: o mapeamento de um único rastreador de pinça por mão restringe a execução à monofonia ou a melodias de nota única. O desejo orgânico do utilizador de expandir o escopo sonoro para execuções harmônicas completas (acordes polifônicos) será discutido como o principal foco de trabalho futuro do sistema.

@@ -1,0 +1,36 @@
+\chapter{Considerações Finais}
+\label{chap:consideracoes_finais}
+
+Este trabalho propôs o desenvolvimento e a avaliação do Aerochord, um hiperinstrumento musical gestual fundamentado em visão computacional e no protocolo MIDI 2.0. A motivação central da pesquisa originou-se na observação de uma lacuna significativa no estado da arte: a ausência de sistemas que aliassem alta acessibilidade — dispensando equipamentos físicos (\textit{hardware}) de alto custo —, baixa latência e expressividade de nível profissional. Ao longo dos capítulos, a transição da fundamentação teórica para a implementação prática demonstrou que é possível democratizar a execução musical sem abdicar do rigor técnico.
+
+A pesquisa cumpriu integralmente os seus objetivos delineados no Capítulo~\ref{chap:introducao}. A revisão bibliográfica consolidou o entendimento sobre a interação humano-computador aplicada à música e a evolução dos hiperinstrumentos. A adoção do protocolo MIDI 2.0 provou ser um diferencial crítico, permitindo resoluções de modulação e dobras de afinação por nota individual (\textit{Per-Note Pitch Bend}) virtualmente impossíveis de alcançar com o padrão legado. A arquitetura dos programas de computador (\textit{software}), construída em linguagem C++ e utilizando o arcabouço (\textit{framework}) JUCE em conjunto com a biblioteca MediaPipe, materializou esses conceitos numa solução robusta e funcional.
+
+\section{Síntese dos Resultados}
+\label{sec:sintese_resultados}
+
+A avaliação empírica do Aerochord comprovou a viabilidade técnica e prática da proposta. Em termos de desempenho, a arquitetura baseada em esteiras de processamento assíncronas (\textit{pipelines}) e filas livres de bloqueio (\textit{lock-free}) foi capaz de manter a latência de ponta a ponta (\textit{end-to-end}) rigorosamente controlada. O percentil 95 (P95) de 24,45 milissegundos atesta que o sistema opera consistentemente abaixo da barreira perceptível de 30 milissegundos, um marco notável para uma aplicação que realiza inferência de redes neurais em tempo real sobre imagens de vídeo. 
+
+Simultaneamente, o consumo de recursos da máquina revelou-se altamente eficiente (consumindo cerca de 25\% de CPU e menos de 120 MB de memória RAM num ambiente de teste padrão), confirmando a sustentabilidade da execução do Aerochord em paralelo com Estações de Trabalho de Áudio Digital (DAWs) num mesmo computador de uso doméstico. 
+
+Na perspetiva da usabilidade, o teste piloto empírico demonstrou que o hiperinstrumento possui uma barreira técnica de entrada muito baixa. O modelo de interação centrado na distinção ergonômica entre a mão dominante (para articulação de notas e efeitos) e a mão não dominante (para macro-controles como volume e oitavas) mostrou-se natural. Essa separação de lateralidade permitiu que um utilizador sem formação musical formal compreendesse o sistema e gerasse melodias expressivas com menos de cinco minutos de instrução preliminar.
+
+\section{Limitações do Estudo}
+\label{sec:limitacoes}
+
+Apesar dos resultados positivos, o sistema apresenta limitações inerentes à tecnologia escolhida e às decisões iniciais de projeto (\textit{design}). A utilização de visão monocular (captura por uma única lente de \textit{webcam}) torna a aplicação dependente de boas condições de iluminação e de um enquadramento visual claro. Situações de oclusão mecânica das mãos ou movimentos excessivamente rápidos que gerem borrão de movimento (\textit{motion blur}) podem induzir falhas pontuais no rastreamento dos pontos de referência anatômicos (\textit{landmarks}).
+
+Adicionalmente, a lógica de acionamento musical desenvolvida na versão atual da Máquina de Estados Finitos restringe a execução a uma única nota por vez na mão dominante (monofonia). O mapeamento de um único gesto de pinça global impede, momentaneamente, a formulação de blocos harmônicos simultâneos no mesmo canal.
+
+\section{Trabalhos Futuros}
+\label{sec:trabalhos_futuros}
+
+As limitações identificadas e o retorno avaliativo (\textit{feedback}) qualitativo obtido durante os testes abrem um leque de oportunidades promissoras para a continuidade deste trabalho. Entre as principais diretrizes para evolução do Aerochord, destacam-se:
+
+\begin{itemize}
+    \item \textbf{Implementação de Polifonia e Acordes:} Conforme apontado diretamente pelo participante do teste piloto empírico (que expressou o forte desejo de tocar acordes em vez de notas soltas), o desenvolvimento de uma lógica para reconhecer o fechamento independente de múltiplos dedos permitirá a execução de harmonias completas, elevando o teto de virtuosidade da aplicação.
+    \item \textbf{Mapeamentos Inteligentes via Aprendizado de Máquina (\textit{Machine Learning}):} Integrar algoritmos que aprendam o vocabulário gestual individual do intérprete, ajustando automaticamente as curvas de sensibilidade e as zonas mortas (\textit{dead zones}) em tempo real, personalizando ainda mais a experiência ergonômica.
+    \item \textbf{Fusão Multimodal:} Combinar o rastreamento da \textit{webcam} com Unidades de Medição Inercial presentes em dispositivos vestíveis comuns, como relógios inteligentes (\textit{smartwatches}), para mitigar as falhas de oclusão visual da lente monocular e aumentar a precisão dos gestos.
+    \item \textbf{Exploração em Ambientes Imersivos:} Expandir a saída de dados do sistema para controlar motores (\textit{engines}) sonoros em ambientes de Realidade Virtual e Realidade Aumentada (VR/AR), tirando proveito da arquitetura assíncrona de baixa latência já estabelecida.
+\end{itemize}
+
+Em suma, o Aerochord consolida-se como um passo significativo em direção à democratização da musicalidade mediada por computador. O equilíbrio alcançado entre o baixo custo estrutural, o alto desempenho computacional e a inovação tecnológica conferida pelo protocolo MIDI 2.0 prova que a expressão musical gestual digital não precisa ser um privilégio exclusivo de laboratórios e estúdios avançados, podendo ser acessível, responsiva e profundamente expressiva para qualquer pessoa com um computador e uma câmera.

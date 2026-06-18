@@ -19,12 +19,12 @@ Para formalizar as interações entre o usuário e o hiperinstrumento, elaborou-
     \fonte{O Autor (2026).}
 \end{figure}
 
-O sistema prevê os seguintes casos de uso principais, que são acionados simultaneamente dependendo da lateralidade (mão dominante ou não dominante) do usuário:
+O sistema prevê os seguintes casos de uso principais, que são acionados simultaneamente dependendo do papel de cada mão (controle ou articulação, atribuído por ordem de entrada em quadro — ver Seção~\ref{sec:captura_deteccao}):
 \begin{itemize}
     \item \textbf{Acionar Nota:} O caso de uso central, onde o músico realiza o fechamento dos dedos para engatilhar um evento sonoro.
     \item \textbf{Modular Afinação (\textit{Pitch Bend}):} Ação contínua e simultânea à nota ativada, alterando a altura da nota através da inclinação da mão.
     \item \textbf{Controlar Timbre/Filtro:} Modulação contínua do som utilizando a abertura dos dedos.
-    \item \textbf{Controlar Volume e Oitava:} Ações de macrocontrole, operadas pela mão não dominante, que configuram a região tonal e a intensidade global do som.
+    \item \textbf{Controlar Volume e Oitava:} Ações de macrocontrole, operadas pela mão de controle, que configuram a região tonal e a intensidade global do som.
     \item \textbf{Acionar Sustentação (\textit{Sustain}):} Manutenção do som após a liberação do gesto original.
 \end{itemize}
 
@@ -49,18 +49,22 @@ O fluxo contínuo de dados atravessa os seguintes estágios:
 
 A primeira etapa do \textit{pipeline} é gerenciada pelo módulo de captura (\texttt{CaptureModule}), responsável por interagir diretamente com o equipamento físico (\textit{hardware}) de vídeo. Em ambientes Linux, o módulo utiliza a interface V4L2 (\textit{Video4Linux2}) com mapeamento direto de memória (\textit{memory mapping}) para acessar os \textit{buffers} da câmera, evitando cópias desnecessárias na memória do sistema. 
 
-Na sequência, o módulo de detecção (\texttt{PoseDetectionModule}) consome esses quadros e aciona o rastreador de pontos-chave das mãos (\textit{Hand Landmarker}) do MediaPipe. Este módulo extrai 21 pontos de referência anatômicos (\textit{landmarks}) tridimensionais normalizados para até duas mãos simultaneamente. Para mitigar o \textit{jitter} (pequenas oscilações naturais e ruídos na inferência da rede neural) que poderia resultar em ruído sonoro, o sistema aplica um filtro de Média Móvel Exponencial (EMA) sobre as coordenadas espaciais. Adicionalmente, um algoritmo de correspondência espacial por proximidade do pulso garante que as detecções não troquem de mãos inadvertidamente entre os quadros, preservando a coerência da atribuição da mão de controle independente do posicionamento do usuário.
+Na sequência, o módulo de detecção (\texttt{PoseDetectionModule}) consome esses quadros e aciona o rastreador de pontos-chave das mãos (\textit{Hand Landmarker}) do MediaPipe. Este módulo extrai 21 pontos de referência anatômicos (\textit{landmarks}) tridimensionais normalizados para até duas mãos simultaneamente. Para mitigar o \textit{jitter} (pequenas oscilações naturais e ruídos na inferência da rede neural) que poderia resultar em ruído sonoro, o sistema aplica um filtro de Média Móvel Exponencial (EMA) sobre as coordenadas espaciais. Adicionalmente, um algoritmo de correspondência espacial por proximidade do pulso garante que as detecções não troquem de papel inadvertidamente entre os quadros, preservando a coerência da atribuição de cada mão ao longo do tempo.
+
+A atribuição inicial dos papéis de cada mão (controle vs.\ articulação) é feita por \textbf{ordem de entrada em quadro}, e não pela classificação de lateralidade (esquerda/direita) do MediaPipe: a primeira mão detectada após um período sem nenhuma mão em quadro assume o papel de controle (volume/oitava); a segunda mão a entrar assume o papel de articulação (pinça/notas). Essa escolha de projeto decorre da baixa confiabilidade da classificação de lateralidade do MediaPipe quando apenas uma mão está visível, sem o contexto da outra mão para comparação — o que tornaria o rótulo bruto do modelo uma base instável para a divisão de papéis. Como efeito colateral desejável, esse critério torna o sistema utilizável tanto por destros quanto por canhotos sem qualquer configuração: o usuário simplesmente posiciona primeiro a mão que deseja usar para controle.
 
 \section{Máquina de Estados e Análise Gestual}
 \label{sec:fsm_analise}
 
 O módulo de análise (\texttt{GestureAnalysisModule}) atua como o motor lógico do sistema. Ele ingere as coordenadas filtradas e extrai métricas geométricas, como distâncias euclidianas e ângulos relativos, alimentando a Máquina de Estados Finitos (FSM) que identifica a intenção musical do usuário.
 
-Visando acessibilidade e ergonomia irrestrita (suportando usuários destros e canhotos), o sistema adapta-se à lateralidade do intérprete, dividindo as responsabilidades da seguinte forma:
+Visando acessibilidade e ergonomia irrestrita (suportando usuários destros e canhotos sem qualquer configuração prévia), o sistema divide as responsabilidades entre dois papéis funcionais, atribuídos por ordem de entrada em quadro conforme descrito na Seção~\ref{sec:captura_deteccao}:
 \begin{itemize}
-    \item \textbf{Mão Dominante (Articulação e Modulação):} Controla o gatilho das notas através de um gesto de ``pinça'' (aproximação entre polegar e indicador). A FSM transita pelos estados de inatividade (\texttt{IDLE}), início de pinça (\texttt{PINCH\_START}) e sustentação de pinça (\texttt{PINCH\_HOLD}). Durante a sustentação, o módulo extrai variações contínuas, como o ângulo de inclinação da mão para modulação de afinação (\textit{Pitch Bend}) e a taxa de oscilação lateral para controle de \textit{Vibrato}.
-    \item \textbf{Mão Não Dominante (Macrocontrole):} Opera majoritariamente de forma contínua. A altura vertical da mão aberta traduz-se em controle global de volume. Um gesto de pinça acompanhado de movimento vertical aciona a transição de oitavas, enquanto manter a mão em repouso por um período pré-determinado alterna o estado do pedal de sustentação (\textit{Sustain}).
+    \item \textbf{Mão de Articulação e Modulação (segunda a entrar em quadro):} Controla o gatilho das notas através de um gesto de "pinça" (aproximação entre polegar e indicador). A FSM transita pelos estados de inatividade (\texttt{IDLE}), início de pinça (\texttt{PINCH\_START}) e sustentação de pinça (\texttt{PINCH\_HOLD}). Durante a sustentação, o módulo extrai variações contínuas, como o ângulo de inclinação da mão para modulação de afinação (\textit{Pitch Bend}) e a taxa de oscilação lateral para controle de \textit{Vibrato}.
+    \item \textbf{Mão de Macrocontrole (primeira a entrar em quadro):} Opera majoritariamente de forma contínua. A altura vertical da mão aberta traduz-se em controle global de volume. Um gesto de pinça acompanhado de movimento vertical aciona a transição de oitavas, enquanto manter a mão em repouso por um período pré-determinado alterna o estado do pedal de sustentação (\textit{Sustain}).
 \end{itemize}
+
+Como o papel de cada mão é definido pela ordem de entrada e não pela lateralidade anatômica, o usuário escolhe livremente qual mão (esquerda ou direita) deseja usar para articulação, bastando posicioná-la em quadro depois da mão de controle.
 
 Para garantir estabilidade, o módulo implementa lógicas de estabilização de sinal (\textit{debounce}, exigindo estabilidade por quadros consecutivos) e \textit{histerese} (diferença de limiares) nas transições de estado, prevenindo engatilhamentos duplos e acidentais das notas.
 
@@ -80,45 +84,45 @@ A Tabela~\ref{tab:mapeamento_implementado} descreve o conjunto de mapeamentos im
      \renewcommand{\arraystretch}{1.0}
      \begin{tabularx}{\textwidth}{L{2.5cm} L{2cm} L{4.5cm} X}
         \toprule
-        \textbf{Função Musical} & \textbf{Lateralidade} & \textbf{Gesto Utilizado} & \textbf{Justificativa} \\
+        \textbf{Função Musical} & \textbf{Mão (ordem de entrada)} & \textbf{Gesto Utilizado} & \textbf{Justificativa} \\
         \midrule
         Seleção de Oitava 
-            & Não Dominante 
+            & 1\textsuperscript{a} (controle)
             & Pinça + movimento vertical. 
             & Gesto modal claro que separa o controle de oitava de outras funções, evitando acionamentos acidentais. \\
         \addlinespace
         Volume Global 
-            & Não Dominante 
+            & 1\textsuperscript{a} (controle)
             & Mão aberta + movimento vertical. 
             & Mapeamento intuitivo (cima/baixo = mais/menos) que utiliza um gesto natural de ``repouso''. \\
         \addlinespace
         Disparo de Nota 
-            & Dominante 
+            & 2\textsuperscript{a} (articulação)
             & Pinça (polegar + indicador) em zonas verticais discretas. 
             & Gesto ergonômico e preciso para iniciar o som. A altura da mão define a nota de forma intuitiva. \\
         \addlinespace
         Parada de Nota 
-            & Dominante 
+            & 2\textsuperscript{a} (articulação)
             & Soltar o gesto de pinça. 
             & Ação de abrir a mão é a contraparte mecânica e imediata ao gesto de disparo. \\
         \addlinespace
         Timbre/Filtro 
-            & Dominante 
+            & 2\textsuperscript{a} (articulação)
             & Distância entre a ponta do dedo médio e a palma. 
             & Gesto robusto para rastreamento que oferece grande amplitude expressiva sem influenciar a afinação. \\
         \addlinespace
         \textit{Pitch Bend} 
-            & Dominante 
+            & 2\textsuperscript{a} (articulação)
             & Inclinação (rotação) da mão. 
             & Movimento angular é ortogonal ao movimento de seleção de nota, minimizando conflitos de leitura. \\
         \addlinespace
         \textit{Vibrato} 
-            & Dominante 
+            & 2\textsuperscript{a} (articulação)
             & Oscilação leve lateral. 
             & Mimetiza mecanicamente o \textit{vibrato} de instrumentos de corda acústicos. \\
         \addlinespace
         Intensidade (\textit{Velocity}) 
-            & Dominante 
+            & 2\textsuperscript{a} (articulação)
             & Velocidade temporal de fechamento da pinça. 
             & Imita a física de instrumentos de percussão e teclas (tocar mais rápido gera um ataque mais intenso). \\
         \bottomrule
@@ -126,11 +130,11 @@ A Tabela~\ref{tab:mapeamento_implementado} descreve o conjunto de mapeamentos im
     }
 \end{table}
 
-Observa-se que a mão não dominante foi minimamente utilizada, o que abre margem para expansões futuras de controle (como acionamento de acordes inteiros ou mudança de programas). O mapeamento discrimina claramente ações discretas (ativação de nota) e modulações contínuas.
+Observa-se que a mão de controle foi minimamente utilizada, o que abre margem para expansões futuras de controle (como acionamento de acordes inteiros ou mudança de programas). O mapeamento discrimina claramente ações discretas (ativação de nota) e modulações contínuas.
 
 O sistema divide a área de atuação da câmera em 12 zonas verticais, correspondentes aos semitons de uma oitava completa. O mapeamento incorpora zonas mortas (\textit{dead zones} — áreas de fronteira sem resposta) e preenchimento (\textit{padding}) nas extremidades superior e inferior do quadro visual. Isso fixa as notas mais graves e agudas, garantindo que o \textit{performer} não precise esticar o braço até os limites físicos do alcance da câmera para tocar as notas extremas da escala.
 
-Um recurso de destaque na implementação é o modo de ligação (\textit{legato}). Quando ativado, o mapeador permite a transição de notas de forma fluida (deslizando a mão dominante ainda fechada entre as zonas verticais). A engenharia do módulo garante que o comando da nova nota (\texttt{NOTE\_ON}) seja emitido milissegundos antes do encerramento da nota anterior (\texttt{NOTE\_OFF}), criando a sobreposição de áudio necessária para que os sintetizadores engatilhem transições fluídas, mimetizando instrumentos de sopro.
+Um recurso de destaque na implementação é o modo de ligação (\textit{legato}). Quando ativado, o mapeador permite a transição de notas de forma fluida (deslizando a mão de articulação ainda fechada entre as zonas verticais). A engenharia do módulo garante que o comando da nova nota (\texttt{NOTE\_ON}) seja emitido milissegundos antes do encerramento da nota anterior (\texttt{NOTE\_OFF}), criando a sobreposição de áudio necessária para que os sintetizadores engatilhem transições fluídas, mimetizando instrumentos de sopro.
 
 \section{Geração de Protocolo e Suporte Nativo a MIDI 2.0}
 \label{sec:geracao_protocolo}
