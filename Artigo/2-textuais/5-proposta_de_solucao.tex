@@ -108,7 +108,7 @@ A Tabela~\ref{tab:mapeamento_implementado} descreve o conjunto de mapeamentos im
         \addlinespace
         Timbre/Filtro 
             & 2\textsuperscript{a} (articulação)
-            & Distância entre a ponta do dedo médio e a palma. 
+            & Distância entre a ponta do dedo médio e o pulso (base da mão).
             & Gesto robusto para rastreamento que oferece grande amplitude expressiva sem influenciar a afinação. \\
         \addlinespace
         \textit{Pitch Bend} 
@@ -121,10 +121,15 @@ A Tabela~\ref{tab:mapeamento_implementado} descreve o conjunto de mapeamentos im
             & Oscilação leve lateral. 
             & Mimetiza mecanicamente o \textit{vibrato} de instrumentos de corda acústicos. \\
         \addlinespace
-        Intensidade (\textit{Velocity}) 
+        Intensidade (\textit{Velocity})
             & 2\textsuperscript{a} (articulação)
-            & Velocidade temporal de fechamento da pinça. 
+            & Velocidade temporal de fechamento da pinça.
             & Imita a física de instrumentos de percussão e teclas (tocar mais rápido gera um ataque mais intenso). \\
+        \addlinespace
+        Sustentação (\textit{Sustain})
+            & 1\textsuperscript{a} (controle)
+            & Mão aberta mantida parada por um intervalo curto (alterna liga/desliga).
+            & Gesto de ``repouso'' que evita conflito com os controles contínuos de volume e oitava, análogo ao pedal de um piano. \\
         \bottomrule
      \end{tabularx}
     }
@@ -141,6 +146,8 @@ Um recurso de destaque na implementação é o modo de ligação (\textit{legato
 
 A etapa final reside no módulo de comunicação, responsável por formatar e entregar os comandos musicais ao sistema operacional. O Aerochord inova ao implementar suporte ao padrão MIDI 2.0 através da formatação de Pacotes MIDI Universais (\textit{Universal MIDI Packet} - UMP).
 
-Durante a inicialização, o sistema executa um processo de negociação inicial (\textit{handshake}) via Consulta de Capacidades (\textit{Capability Inquiry} - MIDI-CI), enviando mensagens de descoberta (\textit{Discovery}) para verificar se o dispositivo receptor suporta a nova especificação. Sendo compatível, o sistema constrói pacotes UMP de 64 bits e os despacha. Isso garante resoluções de 32 bits para mensagens de controle contínuo, além de permitir o \textit{Per-Note Pitch Bend} (dobra de afinação individualizada por nota ativa), elevando drasticamente o teto de expressividade instrumental da aplicação.
+Durante a inicialização, o sistema seleciona o transporte de saída em uma ordem de preferência. O caminho primário para o MIDI 2.0, em ambientes Linux, é o suporte nativo a UMP do \textit{ALSA Sequencer} (disponível em \textit{kernel} recente em conjunto com a \textit{alsa-lib} compatível): o módulo abre uma porta virtual de saída em modo MIDI 2.0, à qual sintetizadores e Estações de Trabalho de Áudio Digital podem se conectar. Estando esse transporte disponível, o sistema constrói pacotes UMP de 64 bits e os despacha diretamente por essa porta. Isso garante resoluções de 32 bits para mensagens de controle contínuo, além de permitir o \textit{Per-Note Pitch Bend} (dobra de afinação individualizada por nota ativa), elevando drasticamente o teto de expressividade instrumental da aplicação.
 
-Caso o equipamento ou \textit{software} receptor não suporte o novo padrão, o sistema aplica um mecanismo de contingência (\textit{fallback}) transparente, truncando matematicamente os dados para os 7 bits originais e roteando a comunicação via arquitetura legado (MIDI 1.0), assegurando total compatibilidade com tecnologias anteriores e garantindo a universalidade da solução.
+Como mecanismo complementar de interoperabilidade, o sistema também implementa a negociação por Consulta de Capacidades (\textit{Capability Inquiry} - MIDI-CI): quando o transporte UMP nativo não está disponível, é realizado um \textit{handshake} que envia mensagens de descoberta (\textit{Discovery}) para verificar se o dispositivo receptor anuncia suporte à nova especificação. Sobre essa negociação foi prototipada ainda a Troca de Propriedades (\textit{Property Exchange}), prevista para a calibragem dinâmica de parâmetros.
+
+Caso nenhum transporte MIDI 2.0 esteja disponível — ou o equipamento/\textit{software} receptor não suporte o novo padrão —, o sistema aplica um mecanismo de contingência (\textit{fallback}) transparente, truncando matematicamente os dados para os 7 bits originais e roteando a comunicação via arquitetura legado (MIDI 1.0), assegurando total compatibilidade com tecnologias anteriores e garantindo a universalidade da solução.

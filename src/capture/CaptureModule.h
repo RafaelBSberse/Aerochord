@@ -18,10 +18,12 @@ namespace aerochord {
 //   - Aplicar buffering circular interno
 //   - Publicar VideoFrames na fila de saída (lock-free, SPSC)
 //
-// Abstração de backend (sem lógica aqui — ver implementação):
-//   - Windows : DirectShow / Media Foundation
-//   - macOS   : AVFoundation
-//   - Linux   : V4L2
+// Backend de captura por plataforma:
+//   - Linux   : V4L2 com mmap (IMPLEMENTADO)
+//   - Windows : DirectShow / Media Foundation (planejado — ainda não implementado)
+//   - macOS   : AVFoundation (planejado — ainda não implementado)
+// Em plataformas sem backend, o módulo emite quadros vazios com timing correto,
+// mantendo o restante do pipeline funcional (ver captureLoop()).
 //
 // Uso:
 //   auto queue  = std::make_shared<LockFreeQueue<VideoFrame>>();

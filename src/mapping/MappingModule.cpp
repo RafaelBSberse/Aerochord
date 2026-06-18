@@ -123,9 +123,19 @@ MappingProfile MappingModule::buildDefaultProfile(const Config& cfg) {
     MappingProfile p;
     p.name = "default";
 
-    // UMP Groups: mão direita = Group 1, mão esquerda = Group 0 (cap 3, §3.2.2)
-    constexpr uint8_t kGroupRight = 1;
-    constexpr uint8_t kGroupLeft  = 0;
+    // UMP Group único para toda a voz (cap 3, §3.2.2).
+    //
+    // O Aerochord é um instrumento monofônico de voz única: notas, volume,
+    // sustain, timbre, vibrato e pitch bend moldam o MESMO som. Portanto todos
+    // os comandos — tanto da mão de articulação quanto da mão de controle —
+    // compartilham o mesmo Group e canal, garantindo que controles globais
+    // (CC#7 volume, CC#64 sustain) e per-nota (timbre, vibrato, pitch bend)
+    // realmente atuem sobre as notas em qualquer receptor MIDI 2.0 conforme
+    // a especificação (cada Group é uma porta de 16 canais independente).
+    // Groups adicionais ficam reservados para a expansão polifônica/multivoz
+    // (ver trabalhos futuros, cap. 7).
+    constexpr uint8_t kGroupRight = 0;  // voz principal
+    constexpr uint8_t kGroupLeft  = 0;  // macrocontroles na mesma voz
 
     // RIGHT_PINCH_START → NOTE_ON
     p.translators[GestureType::RIGHT_PINCH_START] = [cfg](const GestureEvent& ev) {
@@ -249,7 +259,7 @@ void MappingModule::mappingLoop() {
                 MidiCommand pc;
                 pc.type          = MidiCommandType::PROGRAM_CHANGE;
                 pc.channel       = config_.midiChannel;
-                pc.group         = 1;  // mão direita (grupo principal)
+                pc.group         = 0;  // voz principal (Group único — ver buildDefaultProfile)
                 pc.controlNumber = static_cast<uint32_t>(prog);
                 pc.timestamp     = std::chrono::steady_clock::now();
                 if (outputQueue_->push(pc)) {

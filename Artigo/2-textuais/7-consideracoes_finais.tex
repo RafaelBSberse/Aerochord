@@ -12,14 +12,14 @@ A avaliação empírica do Aerochord comprovou a viabilidade técnica e prática
 
 Simultaneamente, o consumo de recursos da máquina revelou-se altamente eficiente (consumindo cerca de 25\% de CPU e menos de 120 MB de memória RAM num ambiente de teste padrão), confirmando a sustentabilidade da execução do Aerochord em paralelo com Estações de Trabalho de Áudio Digital (DAWs) num mesmo computador de uso doméstico. 
 
-Na perspetiva da usabilidade, o teste piloto empírico demonstrou que o hiperinstrumento possui uma barreira técnica de entrada muito baixa. O modelo de interação centrado na distinção ergonômica entre a mão dominante (para articulação de notas e efeitos) e a mão não dominante (para macro-controles como volume e oitavas) mostrou-se natural. Essa separação de lateralidade permitiu que um utilizador sem formação musical formal compreendesse o sistema e gerasse melodias expressivas com menos de cinco minutos de instrução preliminar.
+Na perspetiva da usabilidade, o teste piloto empírico demonstrou que o hiperinstrumento possui uma barreira técnica de entrada muito baixa. O modelo de interação centrado na distinção ergonômica entre a mão de articulação (para notas e efeitos) e a mão de controle (para macro-controles como volume e oitavas), com os papéis atribuídos pela ordem de entrada em quadro, mostrou-se natural. Essa separação de papéis permitiu que um utilizador sem formação musical formal compreendesse o sistema e gerasse melodias expressivas com menos de cinco minutos de instrução preliminar.
 
 \section{Limitações do Estudo}
 \label{sec:limitacoes}
 
 Apesar dos resultados positivos, o sistema apresenta limitações inerentes à tecnologia escolhida e às decisões iniciais de projeto (\textit{design}). A utilização de visão monocular (captura por uma única lente de \textit{webcam}) torna a aplicação dependente de boas condições de iluminação e de um enquadramento visual claro. Situações de oclusão mecânica das mãos ou movimentos excessivamente rápidos que gerem borrão de movimento (\textit{motion blur}) podem induzir falhas pontuais no rastreamento dos pontos de referência anatômicos (\textit{landmarks}).
 
-Adicionalmente, a lógica de acionamento musical desenvolvida na versão atual da Máquina de Estados Finitos restringe a execução a uma única nota por vez na mão dominante (monofonia). O mapeamento de um único gesto de pinça global impede, momentaneamente, a formulação de blocos harmônicos simultâneos no mesmo canal.
+Adicionalmente, a lógica de acionamento musical desenvolvida na versão atual da Máquina de Estados Finitos restringe a execução a uma única nota por vez na mão de articulação (monofonia). O mapeamento de um único gesto de pinça global impede, momentaneamente, a formulação de blocos harmônicos simultâneos no mesmo canal.
 
 \section{Trabalhos Futuros}
 \label{sec:trabalhos_futuros}

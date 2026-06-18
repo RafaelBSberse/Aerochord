@@ -221,7 +221,7 @@ void GestureAnalysisModule::processRightHand(const HandLandmarks& lm) {
                 ++gesturesEmitted_;
             }
 
-            // RIGHT_TIMBRE_CONTROL — distância dedo médio → palma
+            // RIGHT_TIMBRE_CONTROL — distância ponta do dedo médio → pulso
             {
                 GestureEvent ev;
                 ev.type         = GestureType::RIGHT_TIMBRE_CONTROL;

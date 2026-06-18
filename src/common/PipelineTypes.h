@@ -93,7 +93,7 @@ enum class GestureType {
 
     // Modificadores contínuos com pinça ativa (mão direita)
     RIGHT_PITCH_BEND,        // inclinação frente/trás
-    RIGHT_TIMBRE_CONTROL,    // distância dedo médio–palma
+    RIGHT_TIMBRE_CONTROL,    // distância ponta do dedo médio → pulso
     RIGHT_VIBRATO,           // oscilação lateral leve
     RIGHT_PINCH_POSITION,    // posição vertical durante pinça ativa (legato zone tracking)
 
@@ -109,7 +109,7 @@ struct GestureEvent {
 
     // Valores contínuos normalizados [0, 1] ou [-1, 1] conforme o gesto
     float primaryValue   = 0.0f;  // altura vertical (pitch zone), posição de oitava, volume
-    float secondaryValue = 0.0f;  // pitch bend, distância médio-palma
+    float secondaryValue = 0.0f;  // pitch bend, distância dedo médio → pulso
     float velocity       = 0.0f;  // velocidade de fechamento da pinça [0, 1]
 
     std::chrono::steady_clock::time_point timestamp;

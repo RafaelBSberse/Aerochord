@@ -30,7 +30,7 @@ namespace aerochord {
 //   - distância euclidiana 3D entre landmarks (pinça, abertura)
 //   - velocidade de variação da distância de pinça (velocity de nota)
 //   - inclinação da mão (pitch bend): ângulo entre WRIST e MIDDLE_FINGER_MCP
-//   - distância MIDDLE_FINGER_TIP → palma (timbre/filtro)
+//   - distância MIDDLE_FINGER_TIP → WRIST (timbre/filtro)
 //   - amplitude de oscilação lateral (vibrato)
 // =============================================================================
 
