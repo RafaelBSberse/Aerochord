@@ -266,7 +266,13 @@ static HandLandmarks convertFromMediaPipe(
     lm.timestamp = ts;
 
     // Handedness — MediaPipe reporta do ponto de vista da câmera (imagem espelhada).
-    // "Left" da câmera = mão DIREITA do usuário (e vice-versa).
+    // "Left" da câmera = mão DIREITA anatômica do usuário (e vice-versa).
+    //
+    // IMPORTANTE: este rótulo é usado apenas para fins de log/diagnóstico e
+    // como heurística de desambiguação em um caso residual (ver
+    // detectionLoop()). A atribuição de PAPEL (controle vs. articulação) NÃO
+    // depende deste rótulo — ver comentário em "Atribuir detecções a slots"
+    // para a justificativa.
     if (index < result.handedness_count) {
         const struct Categories& hc = result.handedness[index];
         if (hc.categories_count > 0) {
@@ -432,9 +438,23 @@ void PoseDetectionModule::detectionLoop() {
             AEROCHORD_LOG_DEBUG(kModule, "MediaPipe: nenhuma mão detectada neste frame.");
         }
 
-        // --- Atribuir detecções a slots por proximidade espacial ---
-        // Slot 0 = LEFT, Slot 1 = RIGHT
-        // Usa posição do pulso (landmark 0) para matching.
+        // --- Atribuir detecções a slots por ORDEM DE ENTRADA ---
+        // Slot 0 = papel de CONTROLE (volume/oitava) — primeira mão a entrar em quadro.
+        // Slot 1 = papel de ARTICULAÇÃO (pinça/notas) — segunda mão a entrar em quadro.
+        //
+        // Por que ordem de entrada, e não o rótulo de handedness do MediaPipe:
+        // a classificação esquerda/direita do MediaPipe para uma ÚNICA mão sem
+        // contexto bilateral é pouco confiável (o modelo tem muito menos
+        // informação para decidir do que quando vê as duas mãos juntas). Em
+        // testes manuais, isso fazia o rótulo bruto colar quase sempre no
+        // mesmo slot para a primeira mão detectada, independente de qual mão
+        // fisicamente fosse — ou seja, o sistema já se comportava, na
+        // prática, como "primeira mão = controle, segunda mão = articulação".
+        // Esta versão torna esse comportamento explícito e determinístico,
+        // em vez de depender do viés acidental do classificador.
+        //
+        // Usa posição do pulso (landmark 0) para matching de continuidade
+        // entre quadros (mesma mão não troca de slot por jitter).
         auto wristDistSq = [](const HandLandmarks& a, const HandLandmarks& b) -> float {
             float dx = a.landmarks[0].x - b.landmarks[0].x;
             float dy = a.landmarks[0].y - b.landmarks[0].y;
@@ -460,9 +480,21 @@ void PoseDetectionModule::detectionLoop() {
                 }
             }
             if (!assigned) {
-                // Sem match espacial — usar label bruto do MediaPipe
-                int slot = (dets[0].hand == HandLabel::LEFT) ? 0 : 1;
-                slotDet[slot] = 0;
+                if (!prevSlotActive_[0] && !prevSlotActive_[1]) {
+                    // Cold start: nenhuma mão estava sendo rastreada — esta é,
+                    // por definição, a PRIMEIRA mão a entrar na cena. Sempre
+                    // assume o slot de controle, independente do rótulo de
+                    // handedness do MediaPipe.
+                    slotDet[0] = 0;
+                } else {
+                    // Caso residual: uma mão já era rastreada mas a
+                    // proximidade falhou (salto grande de posição) —
+                    // provavelmente uma mão substituindo a anterior, que saiu
+                    // de quadro. Sem ordem de entrada confiável aqui, usa-se
+                    // o rótulo bruto do MediaPipe só como heurística.
+                    int slot = (dets[0].hand == HandLabel::LEFT) ? 0 : 1;
+                    slotDet[slot] = 0;
+                }
             }
         } else if (numDets == 2) {
             bool anyActive = prevSlotActive_[0] || prevSlotActive_[1];
@@ -481,20 +513,16 @@ void PoseDetectionModule::detectionLoop() {
                     slotDet[0] = 1; slotDet[1] = 0;
                 }
             } else {
-                // Sem histórico — usar labels brutos do MediaPipe
-                int s0 = (dets[0].hand == HandLabel::LEFT) ? 0 : 1;
-                int s1 = (dets[1].hand == HandLabel::LEFT) ? 0 : 1;
-                if (s0 != s1) {
-                    slotDet[s0] = 0;
-                    slotDet[s1] = 1;
+                // Cold start com as duas mãos aparecendo no mesmo quadro: não
+                // existe "ordem de entrada" real neste caso (é ambíguo por
+                // definição). Usa-se um critério determinístico e estável —
+                // a mão mais à esquerda na imagem (menor X) assume o slot de
+                // controle (0); a outra assume o slot de articulação (1).
+                // Não depende do rótulo de handedness do MediaPipe.
+                if (dets[0].landmarks[0].x <= dets[1].landmarks[0].x) {
+                    slotDet[0] = 0; slotDet[1] = 1;
                 } else {
-                    // Ambas alegam o mesmo slot — desambiguar por posição X
-                    // (menor X → LEFT = slot 0)
-                    if (dets[0].landmarks[0].x <= dets[1].landmarks[0].x) {
-                        slotDet[0] = 0; slotDet[1] = 1;
-                    } else {
-                        slotDet[0] = 1; slotDet[1] = 0;
-                    }
+                    slotDet[0] = 1; slotDet[1] = 0;
                 }
             }
         }

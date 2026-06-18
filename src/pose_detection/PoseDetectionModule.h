@@ -16,6 +16,11 @@ namespace aerochord {
 // Responsabilidades:
 //   - Consumir VideoFrames da fila de entrada
 //   - Executar MediaPipe Hand Landmarker em cada quadro
+//   - Atribuir cada mão detectada a um slot de PAPEL (controle/articulação)
+//     por ORDEM DE ENTRADA em quadro — não pelo handedness do MediaPipe,
+//     que é pouco confiável para uma mão isolada (ver .cpp). Isso faz o
+//     sistema funcionar para destros e canhotos sem configuração: a mão
+//     que entra primeiro controla volume/oitava, a segunda articula notas.
 //   - Aplicar filtro de suavização (média móvel ponderada) sobre os landmarks
 //   - Publicar HandLandmarks na fila de saída (lock-free, SPSC)
 //

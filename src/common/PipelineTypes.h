@@ -57,6 +57,14 @@ struct HandLandmark {
     float visibility = 0.0f;  // confiança de detecção [0, 1]
 };
 
+// LEFT/RIGHT aqui denotam PAPEL funcional, não a mão anatômica do usuário:
+//   LEFT  = mão de controle (volume/oitava) — primeira a entrar em quadro
+//   RIGHT = mão de articulação (pinça/notas) — segunda a entrar em quadro
+// A atribuição é feita por ordem de entrada em PoseDetectionModule, não pelo
+// rótulo de handedness do MediaPipe (ver PoseDetectionModule.cpp para a
+// justificativa). Isso é o que torna o sistema utilizável por destros e
+// canhotos sem configuração: basta colocar a mão de controle em quadro
+// primeiro.
 enum class HandLabel { LEFT, RIGHT, UNKNOWN };
 
 struct HandLandmarks {
