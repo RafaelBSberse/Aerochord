@@ -10,6 +10,7 @@
 #include <string>
 #include <thread>
 #include <unordered_map>
+#include <vector>
 
 namespace aerochord {
 
@@ -81,7 +82,7 @@ public:
     bool isRunning() const;
 
     // -------------------------------------------------------------------------
-    // Gerenciamento de perfis (thread-safe via mutex)
+    // Gerenciamento de perfis (publicação lock-free do perfil ativo)
     // -------------------------------------------------------------------------
     void loadProfile(MappingProfile profile);
     std::string currentProfileName() const;
@@ -129,8 +130,15 @@ private:
     uint32_t volume_{ 0x7FFFFFFF };  // ~50% em 32 bits
     int      activeNote_{ -1 };
 
-    MappingProfile profile_;
-    mutable std::mutex profileMutex_;  // protege loadProfile() / leitura em mappingLoop()
+    // Perfil de mapeamento publicado de forma lock-free: o hot path (mappingLoop)
+    // apenas executa um load atômico de ponteiro (acquire); loadProfile() publica
+    // um novo ponteiro com release. Os perfis substituídos permanecem vivos em
+    // profileStorage_ até a destruição do módulo, evitando recuperação de memória
+    // no caminho de dados (loadProfile é raro e ocorre fora do hot path).
+    // profileStorageMutex_ serializa apenas chamadas concorrentes de loadProfile.
+    std::atomic<const MappingProfile*>            activeProfile_{ nullptr };
+    std::vector<std::unique_ptr<MappingProfile>>  profileStorage_;
+    mutable std::mutex                            profileStorageMutex_;
 
     std::atomic<uint64_t> commandsEmitted_{ 0 };
 

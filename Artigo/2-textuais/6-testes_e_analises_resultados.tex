@@ -10,7 +10,7 @@ A avaliação foi dividida em três frentes complementares. Na Seção~\ref{sec:
 
 O requisito técnico mais crítico para qualquer Instrumento Musical Digital é a manutenção de uma latência imperceptível para o intérprete, garantindo a sensação de causalidade imediata entre o gesto físico e o evento sonoro. A literatura estabelece que latências de ponta a ponta abaixo de 30 milissegundos (ms) são consideradas ideais para preservar a tocabilidade em interfaces musicais interativas.
 
-Para medir essa métrica, o Aerochord foi executado em um computador de uso comum, equipado com sistema operativo Linux, utilizando o modo analítico (\texttt{--eval}). Neste modo, o \textit{software} regista marcações temporais (\textit{timestamps}) exatas no momento da captura de um quadro de vídeo e, em seguida, regista o momento exato em que a mensagem MIDI 2.0 correspondente é enviada para o sequenciador do sistema operacional.
+Para medir essa métrica, o Aerochord foi executado em um computador de uso comum, equipado com sistema operativo Linux, utilizando o modo analítico (\texttt{--eval}). Neste modo, o \textit{software} regista marcações temporais (\textit{timestamps}) exatas no momento em que um quadro de vídeo é capturado pelo software (entregue pelo subsistema de vídeo) e, em seguida, regista o momento exato em que a mensagem MIDI 2.0 correspondente é enviada para o sequenciador do sistema operacional. Cabe ressaltar que essa métrica isola a latência do \textit{pipeline} de \textit{software} — da captura do quadro ao envio da mensagem MIDI —, não incluindo a latência intrínseca da câmera (exposição do sensor e transferência de dados) nem a renderização de áudio do sintetizador receptor, ambas independentes da implementação.
 
 O teste de carga contínua consistiu na execução da aplicação por um período prolongado de interação ativa, gerando um conjunto de dados (\textit{dataset}) com 3.899 amostras de eventos musicais consecutivos.
 
@@ -24,7 +24,7 @@ A análise estatística do ficheiro de registo gerado pelo sistema demonstrou re
     \item \textbf{Amostras abaixo de 30 ms:} 99,6\%.
 \end{itemize}
 
-O indicador P95 de 24,45 ms atesta que 95\% de todos os eventos musicais gerados pelo sistema — desde a lente da câmara até à saída MIDI — ocorreram em menos de 24,5 milissegundos. Este valor, associado a uma taxa de sucesso de 99,6\% das amostras abaixo da tolerância máxima de 30 ms, prova a eficácia da arquitetura concorrente baseada em filas livres de bloqueio (\textit{lock-free}) implementada em C++.
+O indicador P95 de 24,45 ms atesta que 95\% de todos os eventos musicais gerados pelo sistema — desde a captura do quadro pelo software até o envio da mensagem MIDI — ocorreram em menos de 24,5 milissegundos. Este valor, associado a uma taxa de sucesso de 99,6\% das amostras abaixo da tolerância máxima de 30 ms, prova a eficácia da arquitetura concorrente baseada em filas livres de bloqueio (\textit{lock-free}) implementada em C++.
 
 \subsection{Consumo de Recursos do Sistema}
 O desempenho de baixa latência seria inviável se o consumo de recursos computacionais saturasse o sistema operacional, resultando no descarte de quadros (\textit{frame drops}). Durante os testes em tempo real (registados com PID 31956), a aplicação consumiu em média \textbf{25,72\% de CPU} e utilizou \textbf{116,7 MB de Memória RAM}. 

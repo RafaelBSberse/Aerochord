@@ -23,10 +23,13 @@ MappingModule::MappingModule(std::shared_ptr<GestureQueue> inputQueue,
     , outputQueue_(std::move(outputQueue))
     , config_(config)
     , octave_(config.defaultOctave)
-    , profile_(buildDefaultProfile(config))
     , legatoMode_(config.legatoMode)
     , pitchBendRange_(static_cast<int>(config.pitchBendRange))
 {
+    // Publicar o perfil padrão de forma atômica (lock-free no hot path).
+    auto prof = std::make_unique<MappingProfile>(buildDefaultProfile(config));
+    activeProfile_.store(prof.get(), std::memory_order_release);
+    profileStorage_.push_back(std::move(prof));
 }
 
 MappingModule::~MappingModule() {
@@ -63,14 +66,21 @@ bool MappingModule::isRunning() const { return running_.load(); }
 // Gerenciamento de perfis
 // ---------------------------------------------------------------------------
 void MappingModule::loadProfile(MappingProfile profile) {
-    std::lock_guard<std::mutex> lock(profileMutex_);
-    profile_ = std::move(profile);
-    AEROCHORD_LOG_INFO(kModule, std::string("Perfil carregado: ") + profile_.name);
+    auto prof = std::make_unique<MappingProfile>(std::move(profile));
+    const std::string name = prof->name;
+    {
+        // Serializa apenas chamadas concorrentes de loadProfile (fora do hot path);
+        // o mappingLoop nunca toca profileStorage_, apenas o ponteiro atômico.
+        std::lock_guard<std::mutex> lock(profileStorageMutex_);
+        activeProfile_.store(prof.get(), std::memory_order_release);
+        profileStorage_.push_back(std::move(prof));  // mantém vivo o perfil substituído
+    }
+    AEROCHORD_LOG_INFO(kModule, std::string("Perfil carregado: ") + name);
 }
 
 std::string MappingModule::currentProfileName() const {
-    std::lock_guard<std::mutex> lock(profileMutex_);
-    return profile_.name;
+    const MappingProfile* prof = activeProfile_.load(std::memory_order_acquire);
+    return prof ? prof->name : std::string{};
 }
 
 // ---------------------------------------------------------------------------
@@ -324,9 +334,10 @@ void MappingModule::mappingLoop() {
 
         MidiCommand cmd;
         {
-            std::lock_guard<std::mutex> lock(profileMutex_);
-            auto it = profile_.translators.find(ev.type);
-            if (it == profile_.translators.end())
+            // Hot path lock-free: apenas um load atômico do ponteiro de perfil.
+            const MappingProfile* prof = activeProfile_.load(std::memory_order_acquire);
+            auto it = prof->translators.find(ev.type);
+            if (it == prof->translators.end())
                 continue;  // gesto sem mapeamento no perfil atual
             cmd = it->second(ev);
         }

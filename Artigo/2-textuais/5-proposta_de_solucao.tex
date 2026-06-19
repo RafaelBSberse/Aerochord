@@ -8,7 +8,7 @@ Este capítulo detalha a modelagem de requisitos, a arquitetura da solução e o
 \section{Modelagem de Casos de Uso}
 \label{sec:casos_de_uso}
 
-Para formalizar as interações entre o usuário e o hiperinstrumento, elaborou-se o Diagrama de Casos de Uso (Figura~\ref{fig:diagrama_casos_uso}). Na modelagem, o único ator externo primário é o **Músico** (ou intérprete), que interage com o sistema exclusivamente por meio de gestos no espaço tridimensional capturados pela câmera.
+Para formalizar as interações entre o usuário e o hiperinstrumento, elaborou-se o Diagrama de Casos de Uso (Figura~\ref{fig:diagrama_casos_uso}). Na modelagem, o único ator externo primário é o \textbf{Músico} (ou intérprete). Durante a performance musical, a interação ocorre por meio de gestos no espaço tridimensional capturados pela câmera; complementarmente, um painel gráfico opcional (disponível quando a visualização está ativa) oferece controles de configuração não-expressivos — alternância do modo \textit{legato} e seleção de instrumento (\textit{Program Change}) —, que não fazem parte do fluxo gestual de execução.
 
 \begin{figure}[htbp!]
     \caption{Diagrama de Casos de Uso do Aerochord}
@@ -23,7 +23,7 @@ O sistema prevê os seguintes casos de uso principais, que são acionados simult
 \begin{itemize}
     \item \textbf{Acionar Nota:} O caso de uso central, onde o músico realiza o fechamento dos dedos para engatilhar um evento sonoro.
     \item \textbf{Modular Afinação (\textit{Pitch Bend}):} Ação contínua e simultânea à nota ativada, alterando a altura da nota através da inclinação da mão.
-    \item \textbf{Controlar Timbre/Filtro:} Modulação contínua do som utilizando a abertura dos dedos.
+    \item \textbf{Controlar Timbre/Filtro:} Modulação contínua do som utilizando a extensão do dedo médio (distância da ponta ao pulso).
     \item \textbf{Controlar Volume e Oitava:} Ações de macrocontrole, operadas pela mão de controle, que configuram a região tonal e a intensidade global do som.
     \item \textbf{Acionar Sustentação (\textit{Sustain}):} Manutenção do som após a liberação do gesto original.
 \end{itemize}
