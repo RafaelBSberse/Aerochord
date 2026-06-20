@@ -28,7 +28,7 @@ O sistema prevê os seguintes casos de uso principais, que são acionados simult
     \item \textbf{Acionar Sustentação (\textit{Sustain}):} Manutenção do som após a liberação do gesto original.
 \end{itemize}
 
-\section{Arquitetura do Sistema e Concorrência}
+\section{Arquitetura do Sistema}
 \label{sec:arquitetura_concorrencia}
 
 A arquitetura do Aerochord é composta por cinco módulos principais de processamento, além de um módulo opcional de visualização. Para evitar gargalos e garantir que a lentidão momentânea na inferência de vídeo não bloqueie a emissão de comandos MIDI, cada módulo opera em sua própria linha de execução (\textit{thread}) dedicada.
@@ -56,7 +56,7 @@ A atribuição inicial dos papéis de cada mão (controle vs.\ articulação) é
 \section{Máquina de Estados e Análise Gestual}
 \label{sec:fsm_analise}
 
-O módulo de análise (\texttt{GestureAnalysisModule}) atua como o motor lógico do sistema. Ele ingere as coordenadas filtradas e extrai métricas geométricas, como distâncias euclidianas e ângulos relativos, alimentando a Máquina de Estados Finitos (FSM) que identifica a intenção musical do usuário.
+O módulo de análise (\texttt{GestureAnalysisModule}) atua como o motor lógico do sistema. Ele recebe as coordenadas filtradas e extrai métricas geométricas, como distâncias euclidianas e ângulos relativos, alimentando a Máquina de Estados Finitos (FSM) que identifica a intenção musical do usuário.
 
 Visando acessibilidade e ergonomia irrestrita (suportando usuários destros e canhotos sem qualquer configuração prévia), o sistema divide as responsabilidades entre dois papéis funcionais, atribuídos por ordem de entrada em quadro conforme descrito na Seção~\ref{sec:captura_deteccao}:
 \begin{itemize}
