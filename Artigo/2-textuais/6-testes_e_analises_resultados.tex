@@ -12,34 +12,34 @@ O requisito técnico mais crítico para qualquer Instrumento Musical Digital é 
 
 Para medir essa métrica, o Aerochord foi executado em um computador pessoal, equipado com sistema operativo Linux, utilizando o modo analítico (\texttt{--eval}). Neste modo, o \textit{software} regista marcações temporais (\textit{timestamps}) exatas no momento em que um quadro de vídeo é capturado pelo software (entregue pelo subsistema de vídeo) e, em seguida, regista o momento exato em que a mensagem MIDI 2.0 correspondente é enviada para o sequenciador do sistema operacional. Cabe ressaltar que essa métrica isola a latência do \textit{pipeline} de \textit{software} — da captura do quadro ao envio da mensagem MIDI —, não incluindo a latência intrínseca da câmera (exposição do sensor e transferência de dados) nem a renderização de áudio do sintetizador receptor, ambas independentes da implementação.
 
-O teste de carga contínua consistiu na execução da aplicação por um período prolongado de interação ativa, gerando um conjunto de dados (\textit{dataset}) com 3.899 amostras de eventos musicais consecutivos.
+O teste de carga contínua consistiu na execução da aplicação por um período prolongado de interação ativa, gerando um conjunto de dados (\textit{dataset}) com 7.821 amostras de eventos musicais consecutivos.
 
 \subsection{Resultados de Latência}
 A análise estatística do arquivo de registo gerado pelo sistema demonstrou resultados altamente satisfatórios, superando a meta estabelecida. Os dados recolhidos foram:
 \begin{itemize}
-    \item \textbf{Amostras totais:} 3.899 eventos.
-    \item \textbf{Latência Média:} 22,59 ms.
-    \item \textbf{Percentil 50 (P50 - Mediana):} 22,40 ms.
-    \item \textbf{Percentil 95 (P95):} 24,45 ms.
-    \item \textbf{Amostras abaixo de 30 ms:} 99,6\%.
+    \item \textbf{Amostras totais:} 7.821 eventos.
+    \item \textbf{Latência Média:} 22,62 ms.
+    \item \textbf{Percentil 50 (P50 - Mediana):} 22,29 ms.
+    \item \textbf{Percentil 95 (P95):} 24,73 ms.
+    \item \textbf{Amostras abaixo de 30 ms:} 99,2\%.
 \end{itemize}
 
-O indicador P95 de 24,45 ms atesta que 95\% de todos os eventos musicais gerados pelo sistema — desde a captura do quadro pelo software até o envio da mensagem MIDI — ocorreram em menos de 24,5 milissegundos. Este valor, associado a uma taxa de sucesso de 99,6\% das amostras abaixo da tolerância máxima de 30 ms, prova a eficácia da arquitetura concorrente baseada em filas livres de bloqueio (\textit{lock-free}) implementada em C++.
+O indicador P95 de 24,73 ms atesta que 95\% de todos os eventos musicais gerados pelo sistema — desde a captura do quadro pelo software até o envio da mensagem MIDI — ocorreram em menos de 24,8 milissegundos. Este valor, associado a uma taxa de sucesso de 99,2\% das amostras abaixo da tolerância máxima de 30 ms, prova a eficácia da arquitetura concorrente baseada em filas livres de bloqueio (\textit{lock-free}) implementada em C++.
 
 \subsection{Consumo de Recursos do Sistema}
-O desempenho de baixa latência seria inviável se o consumo de recursos computacionais saturasse o sistema operacional, resultando no descarte de quadros (\textit{frame drops}). Durante os testes em tempo real (registados com PID 31956), a aplicação consumiu em média \textbf{25,72\% de CPU} e utilizou \textbf{116,7 MB de Memória RAM}. 
+O desempenho de baixa latência seria inviável se o consumo de recursos computacionais saturasse o sistema operacional, resultando no descarte de quadros (\textit{frame drops}). Durante os testes em tempo real, a aplicação consumiu em média \textbf{25,27\% de CPU} (medida em relação à capacidade total da máquina) e utilizou \textbf{145,0 MB de Memória RAM}, considerando o \textit{pipeline} central de processamento (captura, detecção, análise, mapeamento e geração MIDI), sem a janela de visualização opcional.
 
 Estes números demonstram que a integração da biblioteca MediaPipe nativa em C++ oferece um impacto computacional significativamente leve. O sistema preserva recursos suficientes para que o mesmo computador possa, simultaneamente, executar uma Estação de Trabalho de Áudio Digital (DAW) e processar sintetizadores virtuais pesados, cumprindo na íntegra a premissa de acessibilidade de \textit{hardware}.
 
 \subsection{Distribuição e Expressividade dos Eventos}
-A análise do \textit{dataset} de 3.899 amostras também revelou a distribuição por tipo de mensagem MIDI gerada durante a execução:
+A análise do \textit{dataset} de 7.821 amostras também revelou a distribuição por tipo de mensagem MIDI gerada durante a execução:
 \begin{itemize}
-    \item \textbf{Eventos de Nota (\textit{Note On / Note Off}):} 318 amostras (8,2\%).
-    \item \textbf{Controladores Contínuos (\textit{Control Change} - CC):} 2.550 amostras (65,4\%).
-    \item \textbf{Dobra de Afinação por Nota (\textit{Per-Note Pitch Bend}):} 1.031 amostras (26,4\%).
+    \item \textbf{Eventos de Nota (\textit{Note On / Note Off}):} 822 amostras (10,5\%).
+    \item \textbf{Controladores Contínuos (\textit{Control Change} - CC):} 4.805 amostras (61,4\%).
+    \item \textbf{Dobra de Afinação por Nota (\textit{Per-Note Pitch Bend}):} 2.194 amostras (28,1\%).
 \end{itemize}
 
-Este perfil de distribuição, onde aproximadamente 91,8\% das mensagens consistem em dados de modulação contínua (CC e Afinação), evidencia matematicamente a filosofia de \textit{design} focada no movimento (\textit{movement-first}). O Aerochord não funciona como um mero disparador de notas estáticas; a maioria dos dados processados reflete a expressividade contínua do corpo do intérprete moldando o som no decurso do tempo.
+Este perfil de distribuição, onde aproximadamente 89,5\% das mensagens consistem em dados de modulação contínua (CC e Afinação), evidencia matematicamente a filosofia de \textit{design} focada no movimento (\textit{movement-first}). O Aerochord não funciona como um mero disparador de notas estáticas; a maioria dos dados processados reflete a expressividade contínua do corpo do intérprete moldando o som no decurso do tempo.
 
 \section{Estabilidade e Avaliação Qualitativa}
 \label{sec:avaliacao_qualitativa}

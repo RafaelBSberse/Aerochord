@@ -137,17 +137,55 @@ A Tabela~\ref{tab:mapeamento_implementado} descreve o conjunto de mapeamentos im
 
 Observa-se que a mão de controle foi minimamente utilizada, o que abre margem para expansões futuras de controle (como acionamento de acordes inteiros ou mudança de programas). O mapeamento discrimina claramente ações discretas (ativação de nota) e modulações contínuas.
 
-O sistema divide a área de atuação da câmera em 12 zonas verticais, correspondentes aos semitons de uma oitava completa. O mapeamento incorpora zonas mortas (\textit{dead zones} — áreas de fronteira sem resposta) e preenchimento (\textit{padding}) nas extremidades superior e inferior do quadro visual. Isso fixa as notas mais graves e agudas, garantindo que o \textit{performer} não precise esticar o braço até os limites físicos do alcance da câmera para tocar as notas extremas da escala.
+O sistema divide a área de atuação da câmera em 12 zonas verticais (Figura~\ref{fig:interface_zonas}), correspondentes aos semitons de uma oitava completa. O mapeamento incorpora zonas mortas (\textit{dead zones} — áreas de fronteira sem resposta) e preenchimento (\textit{padding}) nas extremidades superior e inferior do quadro visual. Isso fixa as notas mais graves e agudas, garantindo que o \textit{performer} não precise esticar o braço até os limites físicos do alcance da câmera para tocar as notas extremas da escala.
 
-Um recurso de destaque na implementação é o modo de ligação (\textit{legato}). Quando ativado, o mapeador permite a transição de notas de forma fluida (deslizando a mão de articulação ainda fechada entre as zonas verticais). A engenharia do módulo garante que o comando da nova nota (\texttt{NOTE\_ON}) seja emitido milissegundos antes do encerramento da nota anterior (\texttt{NOTE\_OFF}), criando a sobreposição de áudio necessária para que os sintetizadores engatilhem transições fluídas, mimetizando instrumentos de sopro.
+\begin{figure}[htbp!]
+    \caption{Interface do Aerochord em execução: esqueleto das mãos detectadas, guia das 12 zonas verticais (semitons) na margem direita com a nota ativa destacada, zonas mortas sombreadas nas extremidades e HUD de telemetria no canto superior esquerdo}
+    \centering
+    \label{fig:interface_zonas}
+    % Nota: salve a captura da janela do Aerochord (com uma nota ativa) como "imagens/interface_zonas.png"
+    \includegraphics[width=0.85\linewidth]{imagens/interface_zonas.png}
+    \fonte{O Autor (2026).}
+\end{figure}
+
+Um recurso de destaque na implementação é o modo de ligação (\textit{legato}). Quando ativado, o mapeador permite a transição de notas de forma fluida (deslizando a mão de articulação ainda fechada entre as zonas verticais). A engenharia do módulo garante que o comando da nova nota (\texttt{NOTE\_ON}) seja emitido milissegundos antes do encerramento da nota anterior (\texttt{NOTE\_OFF}), criando a sobreposição de áudio necessária para que os sintetizadores engatilhem transições fluídas, mimetizando instrumentos de sopro. O modo \textit{legato} e a seleção de instrumento (\textit{Program Change}) são acionados pelo painel de controle exibido abaixo do quadro de vídeo (Figura~\ref{fig:painel_legato}).
+
+\begin{figure}[htbp!]
+    \caption{Painel de controle não-expressivo exibido abaixo do quadro de vídeo: alternância do modo \textit{legato} (ativado) e seletor de instrumento General MIDI}
+    \centering
+    \label{fig:painel_legato}
+    % Nota: salve o recorte do painel inferior da janela como "imagens/painel_legato.png"
+    \includegraphics[width=0.7\linewidth]{imagens/painel_legato.png}
+    \fonte{O Autor (2026).}
+\end{figure}
 
 \section{Geração de Protocolo e Suporte Nativo a MIDI 2.0}
 \label{sec:geracao_protocolo}
 
 A etapa final reside no módulo de comunicação, responsável por formatar e entregar os comandos musicais ao sistema operacional. O Aerochord inova ao implementar suporte ao padrão MIDI 2.0 através da formatação de Pacotes MIDI Universais (\textit{Universal MIDI Packet} - UMP).
 
-Durante a inicialização, o sistema seleciona o transporte de saída em uma ordem de preferência. O caminho primário para o MIDI 2.0, em ambientes Linux, é o suporte nativo a UMP do \textit{ALSA Sequencer} (disponível em \textit{kernel} recente em conjunto com a \textit{alsa-lib} compatível): o módulo abre uma porta virtual de saída em modo MIDI 2.0, à qual sintetizadores e Estações de Trabalho de Áudio Digital podem se conectar. Estando esse transporte disponível, o sistema constrói pacotes UMP de 64 bits e os despacha diretamente por essa porta. Isso garante resoluções de 32 bits para mensagens de controle contínuo, além de permitir o \textit{Per-Note Pitch Bend} (dobra de afinação individualizada por nota ativa), elevando drasticamente o teto de expressividade instrumental da aplicação.
+Durante a inicialização, o sistema seleciona o transporte de saída em uma ordem de preferência. O caminho primário para o MIDI 2.0, em ambientes Linux, é o suporte nativo a UMP do \textit{ALSA Sequencer} (disponível em \textit{kernel} recente em conjunto com a \textit{alsa-lib} compatível): o módulo abre uma porta virtual de saída em modo MIDI 2.0, à qual sintetizadores e Estações de Trabalho de Áudio Digital podem se conectar. Estando esse transporte disponível, o sistema constrói pacotes UMP de 64 bits e os despacha diretamente por essa porta. Isso garante resoluções de 32 bits para mensagens de controle contínuo, além de permitir o \textit{Per-Note Pitch Bend} (dobra de afinação individualizada por nota ativa), elevando drasticamente o teto de expressividade instrumental da aplicação. A seleção desse transporte é registrada no \textit{log} de inicialização do sistema (Figura~\ref{fig:midi2_log}).
+
+\begin{figure}[htbp!]
+    \caption{\textit{Log} de inicialização confirmando a seleção do transporte primário: criação da porta virtual ``Aerochord UMP'' e ativação do modo MIDI 2.0 via UMP nativo do ALSA Sequencer}
+    \centering
+    \label{fig:midi2_log}
+    % Nota: salve a captura do terminal com os logs de inicialização como "imagens/midi2_log.png"
+    \includegraphics[width=0.85\linewidth]{imagens/midi2_log.png}
+    \fonte{O Autor (2026).}
+\end{figure}
 
 Como mecanismo complementar de interoperabilidade, o sistema também implementa a negociação por Consulta de Capacidades (\textit{Capability Inquiry} - MIDI-CI): quando o transporte UMP nativo não está disponível, é realizado um \textit{handshake} que envia mensagens de descoberta (\textit{Discovery}) para verificar se o dispositivo receptor anuncia suporte à nova especificação. Sobre essa negociação foi prototipada ainda a Troca de Propriedades (\textit{Property Exchange}), prevista para a calibragem dinâmica de parâmetros.
 
 Caso nenhum transporte MIDI 2.0 esteja disponível — ou o equipamento/\textit{software} receptor não suporte o novo padrão —, o sistema aplica um mecanismo de contingência (\textit{fallback}) transparente, truncando matematicamente os dados para os 7 bits originais e roteando a comunicação via arquitetura legado (MIDI 1.0), assegurando total compatibilidade com tecnologias anteriores e garantindo a universalidade da solução.
+
+A porta MIDI 2.0 criada pelo Aerochord torna-se imediatamente visível e conectável a sintetizadores e Estações de Trabalho de Áudio Digital do sistema operacional, como evidenciado na Figura~\ref{fig:midi2_porta}.
+
+\begin{figure}[htbp!]
+    \caption{Porta virtual ``Aerochord UMP'' disponível para conexão no subsistema de áudio do sistema operacional (saída do utilitário \texttt{aconnect -l})}
+    \centering
+    \label{fig:midi2_porta}
+    % Nota: salve a captura do terminal (ex.: "aconnect -l" e/ou "aseqdump") como "imagens/midi2_porta.png"
+    \includegraphics[width=0.75\linewidth]{imagens/midi2_porta.png}
+    \fonte{O Autor (2026).}
+\end{figure}
