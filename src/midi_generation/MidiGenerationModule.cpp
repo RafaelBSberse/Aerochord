@@ -3,6 +3,7 @@
 #include "common/ThreadUtils.h"
 
 #include <algorithm>
+#include <cctype>
 #include <chrono>
 #include <cstdio>
 #include <ctime>
@@ -15,7 +16,7 @@
 #  include <alsa/asoundlib.h>
    // UMP via ALSA Sequencer requer alsa-lib ≥ 1.2.10 (SND_LIB_VERSION ≥ 0x10210a)
    // Verificação em tempo de compilação; se não disponível, fallback para MIDI 1.0.
-#  if !defined(SND_LIB_VERSION) || SND_LIB_VERSION < 0x10210a
+#  if !defined(SND_LIB_VERSION) || SND_LIB_VERSION < SND_LIB_VER(1, 2, 10)
 #    define AEROCHORD_ALSA_NO_UMP 1
 #  endif
 #endif
@@ -125,6 +126,80 @@ void MidiGenerationModule::closeAlsaUmp() {
 }
 
 // ---------------------------------------------------------------------------
+// Auto-conexão: liga a porta "Aerochord UMP" a um sintetizador disponível.
+//
+// Percorre os clientes ALSA Sequencer em busca de uma porta capaz de receber
+// eventos (WRITE | SUBS_WRITE), ignorando o próprio cliente, o System e o
+// "Midi Through". Se `match` for não-vazio, exige que o nome do cliente o
+// contenha (case-insensitive); caso contrário, conecta ao primeiro encontrado.
+// O ALSA converte UMP→MIDI 1.0 automaticamente para receptores legados.
+// ---------------------------------------------------------------------------
+void MidiGenerationModule::autoConnectAlsa(const std::string& match) {
+#if defined(__linux__) && !defined(AEROCHORD_ALSA_NO_UMP)
+    if (!alsaSeq_ || alsaPort_ < 0)
+        return;
+
+    const int selfId = snd_seq_client_id(alsaSeq_);
+
+    auto toLower = [](std::string s) {
+        std::transform(s.begin(), s.end(), s.begin(),
+                       [](unsigned char c) { return std::tolower(c); });
+        return s;
+    };
+    const std::string needle = toLower(match);
+
+    snd_seq_client_info_t* cinfo;
+    snd_seq_port_info_t*   pinfo;
+    snd_seq_client_info_alloca(&cinfo);
+    snd_seq_port_info_alloca(&pinfo);
+
+    snd_seq_client_info_set_client(cinfo, -1);
+    while (snd_seq_query_next_client(alsaSeq_, cinfo) >= 0) {
+        const int clientId = snd_seq_client_info_get_client(cinfo);
+        if (clientId == selfId || clientId == SND_SEQ_CLIENT_SYSTEM)
+            continue;
+
+        const char* cnameC = snd_seq_client_info_get_name(cinfo);
+        const std::string cname      = cnameC ? cnameC : "";
+        const std::string cnameLower = toLower(cname);
+
+        // "Midi Through" apenas reflete eventos — não é um sintetizador
+        if (cnameLower.find("through") != std::string::npos)
+            continue;
+        if (!needle.empty() && cnameLower.find(needle) == std::string::npos)
+            continue;
+
+        snd_seq_port_info_set_client(pinfo, clientId);
+        snd_seq_port_info_set_port(pinfo, -1);
+        while (snd_seq_query_next_port(alsaSeq_, pinfo) >= 0) {
+            const unsigned caps     = snd_seq_port_info_get_capability(pinfo);
+            const unsigned needCaps = SND_SEQ_PORT_CAP_WRITE | SND_SEQ_PORT_CAP_SUBS_WRITE;
+            if ((caps & needCaps) != needCaps || (caps & SND_SEQ_PORT_CAP_NO_EXPORT))
+                continue;
+
+            const int portId = snd_seq_port_info_get_port(pinfo);
+            const int err = snd_seq_connect_to(alsaSeq_, alsaPort_, clientId, portId);
+            if (err == 0) {
+                AEROCHORD_LOG_INFO(kModule,
+                    "Auto-conexão: \"Aerochord UMP\" -> \"" + cname + "\" (" +
+                    std::to_string(clientId) + ":" + std::to_string(portId) + ").");
+                return;
+            }
+            AEROCHORD_LOG_WARN(kModule,
+                "Auto-conexão falhou para \"" + cname + "\": " + snd_strerror(err));
+        }
+    }
+
+    AEROCHORD_LOG_WARN(kModule,
+        needle.empty()
+            ? std::string("Auto-conexão: nenhum sintetizador disponível encontrado.")
+            : "Auto-conexão: nenhum sintetizador correspondente a \"" + match + "\" encontrado.");
+#else
+    (void)match;
+#endif
+}
+
+// ---------------------------------------------------------------------------
 // Ciclo de vida
 // ---------------------------------------------------------------------------
 bool MidiGenerationModule::start() {
@@ -167,6 +242,8 @@ bool MidiGenerationModule::start() {
         if (umpAvailable) {
             midi2Mode_.store(true);
             AEROCHORD_LOG_INFO(kModule, "MIDI 2.0 ativo via ALSA Sequencer UMP.");
+            if (config_.autoConnect)
+                autoConnectAlsa(config_.connectTarget);
         }
     }
 

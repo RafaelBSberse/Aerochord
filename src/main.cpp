@@ -43,6 +43,8 @@ struct Args {
     int         width  = 0;            // 0 = auto-detectar resolução máxima
     int         height = 0;            // 0 = auto-detectar resolução máxima
     int         fps    = 0;            // 0 = auto-detectar FPS
+    bool        connect = false;       // auto-conectar porta UMP a um synth (Linux)
+    std::string connectTo;             // substring do synth alvo (vazio = primeiro disponível)
 };
 
 static Args parseArgs(int argc, char* argv[]) {
@@ -60,6 +62,11 @@ static Args parseArgs(int argc, char* argv[]) {
             catch (...) { std::cerr << "[main] --device: valor inválido\n"; }
         } else if (a == "--midi-out" && i + 1 < argc) {
             args.midiOutName = argv[++i];
+        } else if (a == "--connect") {
+            args.connect = true;
+        } else if (a.rfind("--connect=", 0) == 0) {
+            args.connect = true;
+            args.connectTo = std::string(a.substr(std::string_view("--connect=").size()));
         } else if (a == "--width" && i + 1 < argc) {
             try { args.width = std::stoi(argv[++i]); }
             catch (...) { std::cerr << "[main] --width: valor inválido\n"; }
@@ -86,6 +93,7 @@ static Args parseArgs(int argc, char* argv[]) {
     static const option kLongOptions[] = {
         { "device",   required_argument, nullptr, 'd' },
         { "midi-out", required_argument, nullptr, 'm' },
+        { "connect",  optional_argument, nullptr, 'c' },
         { "no-viz",   no_argument,       nullptr, 'n' },
         { "eval",     no_argument,       nullptr, 'e' },
         { "width",    required_argument, nullptr, 'W' },
@@ -97,7 +105,7 @@ static Args parseArgs(int argc, char* argv[]) {
 
     int opt;
     int optIndex = 0;
-    while ((opt = getopt_long(argc, argv, "d:m:nef:r:", kLongOptions, &optIndex)) != -1) {
+    while ((opt = getopt_long(argc, argv, "d:m:c::nef:r:", kLongOptions, &optIndex)) != -1) {
         switch (opt) {
         case 'd':
             try { args.deviceIndex = std::stoi(optarg); }
@@ -107,6 +115,10 @@ static Args parseArgs(int argc, char* argv[]) {
             }
             break;
         case 'm': args.midiOutName = optarg; break;
+        case 'c':
+            args.connect = true;
+            if (optarg) args.connectTo = optarg;  // --connect=NOME (use '=', sem espaço)
+            break;
         case 'n': args.noViz = true;         break;
         case 'e': args.eval  = true;         break;
         case 'W':
@@ -133,7 +145,7 @@ static Args parseArgs(int argc, char* argv[]) {
         }
         default:
             std::cerr << "Uso: aerochord [--device N] [--midi-out nome] "
-                         "[--res WxH] [--fps N] [--no-viz] [--eval]\n";
+                         "[--connect[=synth]] [--res WxH] [--fps N] [--no-viz] [--eval]\n";
             break;
         }
     }
@@ -160,6 +172,10 @@ int main(int argc, char* argv[]) {
         log.info("main", "Modo --eval ativo — CSV de latência será gravado no diretório atual.");
     if (args.noViz)
         log.info("main", "Modo --no-viz: janela de visualização desativada.");
+    if (args.connect)
+        log.info("main", "Auto-conexão MIDI ativa" +
+                 (args.connectTo.empty() ? std::string(" (primeiro synth disponível).")
+                                         : " (alvo: \"" + args.connectTo + "\")."));
 
     std::signal(SIGINT,  signalHandler);
     std::signal(SIGTERM, signalHandler);
@@ -222,7 +238,9 @@ int main(int argc, char* argv[]) {
             .outputDeviceName = args.midiOutName,
             .preferMidi2      = true,
             .midiChannel      = 0,
-            .evalMode         = args.eval
+            .evalMode         = args.eval,
+            .autoConnect      = args.connect,
+            .connectTarget    = args.connectTo
         }
     );
 

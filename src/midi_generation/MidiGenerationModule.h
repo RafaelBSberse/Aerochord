@@ -62,6 +62,8 @@ public:
         uint8_t     midiChannel     = 0;         // canal MIDI [0,15] para RPN e setup inicial
         bool        evalMode        = false;     // gravar CSV de latência por evento
         std::string evalOutputDir   = ".";       // diretório de saída do CSV
+        bool        autoConnect     = false;     // conectar a porta UMP a um synth na inicialização (Linux)
+        std::string connectTarget;               // substring do nome do synth alvo (vazio = primeiro disponível)
         Config() = default;
     };
 
@@ -110,6 +112,9 @@ private:
     // Inicializa porta ALSA Sequencer em modo UMP (Linux)
     bool initAlsaUmp();
     void closeAlsaUmp();
+
+    // Conecta a porta UMP a um sintetizador disponível; match vazio = primeiro (Linux)
+    void autoConnectAlsa(const std::string& match);
 
     // Realiza handshake MIDI-CI e retorna true se MIDI 2.0 negociado
     bool performMidiCiHandshake();
